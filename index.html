@@ -3,13 +3,137 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Glossary</title>
+    <title>Glossary — Ideas · Concepts · Projects</title>
+    <meta name="description" content="A personal glossary for tracking ideas, concepts, and projects. Browse, search, and create entries.">
     <link rel="stylesheet" href="css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
 <body>
-    <div>
-        <script src="js/loadMarkdown.js"></script>
+
+<!-- Mobile overlay -->
+<div id="mobile-overlay" class="mobile-overlay"></div>
+
+<div class="app-layout">
+
+    <!-- ======== Sidebar ======== -->
+    <aside id="sidebar" class="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <div class="logo-icon">📖</div>
+                <span class="logo-text">Glossary</span>
+            </div>
+
+            <div class="search-wrapper">
+                <span class="search-icon">🔍</span>
+                <input type="text" id="search-input" class="search-input" placeholder="Search entries..." autocomplete="off">
+            </div>
+        </div>
+
+        <!-- Filter chips -->
+        <div class="filter-chips">
+            <button class="chip active" data-cat="all">All</button>
+            <button class="chip" data-cat="idea">💡 Idea</button>
+            <button class="chip" data-cat="concept">🧠 Concept</button>
+            <button class="chip" data-cat="project">🚀 Project</button>
+        </div>
+
+        <!-- Entry list -->
+        <div class="entry-count" id="entry-count">0 entries</div>
+        <div class="entry-list" id="entry-list">
+            <div class="loading"><div class="spinner"></div></div>
+        </div>
+
+        <!-- GitHub Token -->
+        <div class="settings-section">
+            <div class="settings-row">
+                <span>🔑</span>
+                <input type="password" id="token-input" placeholder="GitHub token">
+                <button id="btn-save-token">Save</button>
+                <button id="btn-clear-token" style="display:none;background:#ef4444;">Clear</button>
+            </div>
+            <div id="token-status" class="token-status missing">No token — needed to create entries</div>
+        </div>
+
+        <!-- New Entry button -->
+        <div class="sidebar-footer">
+            <button id="btn-new-entry" class="btn-new-entry">
+                <span>＋</span> New Entry
+            </button>
+        </div>
+    </aside>
+
+    <!-- ======== Main ======== -->
+    <main class="main-content">
+        <header class="topbar">
+            <div style="display:flex;align-items:center;gap:12px;">
+                <button id="hamburger" class="hamburger">☰</button>
+                <span id="topbar-title" class="topbar-title">Glossary</span>
+            </div>
+            <div class="topbar-actions">
+                <button class="btn-icon" title="Refresh" onclick="loadEntries()">↻</button>
+            </div>
+        </header>
+
+        <div id="content-area" class="content-area">
+            <div class="welcome-screen">
+                <div class="welcome-icon">📖</div>
+                <h2>Welcome to your Glossary</h2>
+                <p>Select an entry from the sidebar or create a new one. Your ideas, concepts, and projects live here.</p>
+            </div>
+        </div>
+    </main>
+
+</div>
+
+<!-- ======== Create Entry Modal ======== -->
+<div id="modal-overlay" class="modal-overlay">
+    <div class="modal">
+        <div class="modal-header">
+            <h2>✨ New Entry</h2>
+            <button id="modal-close" class="modal-close">✕</button>
+        </div>
+        <form id="entry-form" class="modal-body">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="entry-title-input">Title</label>
+                    <input type="text" id="entry-title-input" class="form-input" placeholder="e.g. Binary Search" required>
+                </div>
+                <div class="form-group">
+                    <label for="entry-category-input">Category</label>
+                    <select id="entry-category-input" class="form-select">
+                        <option value="Idea">💡 Idea</option>
+                        <option value="Concept" selected>🧠 Concept</option>
+                        <option value="Project">🚀 Project</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="entry-tags-input">Tags <span style="color:var(--text-muted);font-weight:400">(comma separated)</span></label>
+                <input type="text" id="entry-tags-input" class="form-input" placeholder="e.g. algorithms, searching, optimization">
+            </div>
+
+            <div class="form-group">
+                <label for="entry-body-input">Content <span style="color:var(--text-muted);font-weight:400">(Markdown)</span></label>
+                <textarea id="entry-body-input" class="form-textarea" placeholder="Write your entry in Markdown...&#10;&#10;## Section&#10;&#10;Some content here..."></textarea>
+            </div>
+
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                <button type="submit" id="btn-submit-entry" class="btn btn-primary">Create Entry</button>
+            </div>
+        </form>
     </div>
+</div>
+
+<!-- Toast notifications -->
+<div id="toast-container" class="toast-container"></div>
+
+<script src="js/config.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/github.js"></script>
+<script src="js/entries.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/app.js"></script>
 </body>
 </html>
