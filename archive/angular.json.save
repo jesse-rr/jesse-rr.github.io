@@ -17,7 +17,7 @@
         "build": {
           "builder": "@angular-devkit/build-angular:browser",
           "options": {
-            "main": "src/main.ts",
+	    "main": "src/main.ts",
             "outputPath": "dist/archive",
             "index": "src/index.html",
             "polyfills": [
@@ -34,7 +34,11 @@
             "styles": [
               "src/styles.scss"
             ],
-            "scripts": []
+            "scripts": [],
+	    "outputMode": "static",
+            "ssr": {
+              "entry": "src/server.ts"
+            }
           },
           "configurations": {
             "production": {
@@ -93,13 +97,4 @@
             "styles": [
               "src/styles.scss"
             ],
-            "scripts": []
-          }
-        },
-        "deploy": {
-          "builder": "angular-cli-ghpages:deploy"
-        }
-      }
-    }
-  }
-}
+

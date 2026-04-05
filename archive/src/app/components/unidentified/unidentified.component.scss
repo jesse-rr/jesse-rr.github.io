@@ -1,0 +1,56 @@
+:host {
+    display: block;
+    margin: 8px;
+}
+
+.unidentified {
+    cursor: pointer;
+    width: 100%;
+    aspect-ratio: 3 / 2;
+    display: flex;
+    transition: transform 0.15s ease-in-out;
+
+    &:active {
+        transform: scale(0.96);
+    }
+}
+
+.unidentified-body {
+    background: var(--folder-tab);
+    width: 100%;
+    height: 100%;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    box-sizing: border-box;
+    border: 2px dashed var(--folder-text);
+    opacity: 0.6;
+    transition: opacity 0.2s ease;
+
+    &:hover {
+        opacity: 0.9;
+    }
+}
+
+.question-mark {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--folder-text);
+    opacity: 0.4;
+    line-height: 1;
+}
+
+.unidentified-title {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--folder-text);
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 80%;
+}

@@ -7,9 +7,9 @@
     font-size: 0.85rem;
     font-weight: 500;
     cursor: pointer;
-    transition: background 0.2s;
+    transition: all ease-in-out .1s;
 
     &:hover {
-        background: var(--theme-btn-hover);
+        color: var(--accent);
     }
 }

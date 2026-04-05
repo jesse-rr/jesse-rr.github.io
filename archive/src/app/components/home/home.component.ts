@@ -3,40 +3,42 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HeaderComponent } from '../header/header.component';
 import { FolderComponent } from '../folder/folder.component';
-import { ProjectService } from '../../util/project.service';
-import { Project } from '../../models/project.model';
+import { FileComponent } from '../file/file.component';
+import { UnidentifiedComponent } from '../unidentified/unidentified.component';
+import { EntryService } from '../../util/project.service';
+import { Entry, EntryCategory } from '../../models/entry.model';
 
 @Component({
   selector: 'app-home',
-  imports: [CommonModule, FormsModule, HeaderComponent, FolderComponent],
+  imports: [CommonModule, FormsModule, HeaderComponent, FolderComponent, FileComponent, UnidentifiedComponent],
   templateUrl: './home.component.html',
   styleUrl: './home.component.scss'
 })
 export class HomeComponent implements OnInit {
   searchQuery = '';
-  selectedCategory = '';
-  categories: string[] = [];
-  allProjects: Project[] = [];
+  selectedCategory: EntryCategory | '' = '';
+  categories: EntryCategory[] = [];
+  allEntries: Entry[] = [];
 
-  constructor(private projectService: ProjectService) { }
+  constructor(private entryService: EntryService) { }
 
   ngOnInit() {
-    this.allProjects = this.projectService.getAll();
-    this.categories = this.projectService.getCategories();
+    this.allEntries = this.entryService.getAll();
+    this.categories = this.entryService.getCategories();
   }
 
-  get filtered(): Project[] {
-    return this.allProjects.filter(p => {
+  get filtered(): Entry[] {
+    return this.allEntries.filter(e => {
       const matchesSearch = !this.searchQuery ||
-        p.title.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
-        p.tags?.some(t => t.toLowerCase().includes(this.searchQuery.toLowerCase()));
+        e.title.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
+        e.tags?.some(t => t.toLowerCase().includes(this.searchQuery.toLowerCase()));
       const matchesCat = !this.selectedCategory ||
-        p.categories?.includes(this.selectedCategory);
+        e.category === this.selectedCategory;
       return matchesSearch && matchesCat;
     });
   }
 
-  selectCategory(cat: string) {
+  selectCategory(cat: EntryCategory) {
     this.selectedCategory = this.selectedCategory === cat ? '' : cat;
   }
 }

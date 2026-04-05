@@ -8,11 +8,15 @@
                 {{ cat }}
             </button>
         </div>
-        <input class="search" type="text" placeholder="Search projects..." [(ngModel)]="searchQuery" />
+        <input class="search" type="text" placeholder="Search entries..." [(ngModel)]="searchQuery" />
     </div>
 
     <div class="grid">
-        <app-folder *ngFor="let p of filtered" [project]="p"></app-folder>
-        <div *ngIf="filtered.length === 0" class="empty">No projects found.</div>
+        <ng-container *ngFor="let e of filtered">
+            <app-folder *ngIf="e.category === 'Project'" [entry]="e"></app-folder>
+            <app-file *ngIf="e.category === 'Idea'" [entry]="e"></app-file>
+            <app-unidentified *ngIf="e.category === 'Undefined'" [entry]="e"></app-unidentified>
+        </ng-container>
+        <div *ngIf="filtered.length === 0" class="empty">No entries found.</div>
     </div>
 </main>

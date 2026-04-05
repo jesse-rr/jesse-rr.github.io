@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap');
+
 *,
 *::before,
 *::after {
@@ -8,11 +10,12 @@
 
 :root {
   --bg: #f5f5f7;
+  --bg-2: #E1E1E3;
   --text: #1a1a1a;
   --text-muted: #888;
-  --header-bg: rgba(245, 245, 247, 0.85);
+  --header-bg: #E1E1E3;
   --border: rgba(0, 0, 0, 0.08);
-  --accent: #5856d6;
+  --accent: #2ec4b6;
   --btn-bg: rgba(0, 0, 0, 0.04);
   --btn-color: #1a1a1a;
   --btn-border: rgba(0, 0, 0, 0.1);
@@ -27,27 +30,35 @@
 
 body.dark-mode {
   --bg: #111113;
+  --bg-2: #2B2B2B;
   --text: #e8e8ed;
   --text-muted: #666;
-  --header-bg: rgba(17, 17, 19, 0.85);
+  --header-bg: rgba(12, 12, 14, 0.85);
   --border: rgba(255, 255, 255, 0.08);
-  --accent: #7b79ff;
+  --accent: #3ddc97;
   --btn-bg: rgba(255, 255, 255, 0.06);
   --btn-color: #e8e8ed;
   --btn-border: rgba(255, 255, 255, 0.1);
   --btn-hover: rgba(255, 255, 255, 0.1);
   --folder-tab: #2a2a2e;
   --folder-body: #333338;
-  --folder-text: #ccc;
+  --folder-text: white;
   --folder-placeholder: #222226;
   --theme-btn-bg: rgba(255, 255, 255, 0.08);
   --theme-btn-hover: rgba(255, 255, 255, 0.15);
 }
 
 body {
-  background: var(--bg);
   color: var(--text);
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: "Bebas Neue", sans-serif;
   min-height: 100dvh;
   transition: background 0.3s, color 0.3s;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(180deg, var(--bg) 0%, var(--bg-2) 100%);
+  z-index: -1;
 }

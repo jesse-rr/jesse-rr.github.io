@@ -1,15 +1,14 @@
 import { Component, Input } from '@angular/core';
 import { Router } from '@angular/router';
-import { CommonModule } from '@angular/common';
 import { Entry } from '../../models/entry.model';
 
 @Component({
-  selector: 'app-folder',
-  imports: [CommonModule],
-  templateUrl: './folder.component.html',
-  styleUrl: './folder.component.scss'
+  selector: 'app-file',
+  imports: [],
+  templateUrl: './file.component.html',
+  styleUrl: './file.component.scss'
 })
-export class FolderComponent {
+export class FileComponent {
   @Input() entry!: Entry;
 
   constructor(private router: Router) { }
