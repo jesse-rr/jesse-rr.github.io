@@ -1,0 +1,18 @@
+<app-header></app-header>
+
+<main class="home">
+    <div class="toolbar">
+        <div class="categories">
+            <button *ngFor="let cat of categories" class="cat-btn" [class.active]="selectedCategory === cat"
+                (click)="selectCategory(cat)">
+                {{ cat }}
+            </button>
+        </div>
+        <input class="search" type="text" placeholder="Search projects..." [(ngModel)]="searchQuery" />
+    </div>
+
+    <div class="grid">
+        <app-folder *ngFor="let p of filtered" [project]="p"></app-folder>
+        <div *ngIf="filtered.length === 0" class="empty">No projects found.</div>
+    </div>
+</main>
