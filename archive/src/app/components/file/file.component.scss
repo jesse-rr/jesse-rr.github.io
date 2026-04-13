@@ -9,11 +9,15 @@
   aspect-ratio: 3 / 2;
   position: relative;
   display: flex;
-  transition: transform 0.15s ease-in-out;
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.15));
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.15)) brightness(1);
+  transition: filter 0.2s ease-in-out, transform 0.15s ease-in-out;
 
   &:active {
     transform: scale(0.96);
+  }
+
+  &:hover {
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.15)) brightness(1.1);
   }
 }
 

@@ -17,6 +17,8 @@ import { Entry, EntryCategory } from '../../models/entry.model';
 export class HomeComponent implements OnInit {
   searchQuery = '';
   selectedCategory: EntryCategory | '' = '';
+  selectedTag: string | '' = '';
+  tags: string[] = [];
   categories: EntryCategory[] = [];
   allEntries: Entry[] = [];
 
@@ -25,6 +27,7 @@ export class HomeComponent implements OnInit {
   ngOnInit() {
     this.allEntries = this.entryService.getAll();
     this.categories = this.entryService.getCategories();
+    this.tags = this.entryService.getTags();
   }
 
   get filtered(): Entry[] {
@@ -32,13 +35,22 @@ export class HomeComponent implements OnInit {
       const matchesSearch = !this.searchQuery ||
         e.title.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
         e.tags?.some(t => t.toLowerCase().includes(this.searchQuery.toLowerCase()));
+
       const matchesCat = !this.selectedCategory ||
         e.category === this.selectedCategory;
-      return matchesSearch && matchesCat;
+
+      const matchesTag = !this.selectedTag ||
+        e.tags?.includes(this.selectedTag);
+
+      return matchesSearch && matchesCat && matchesTag;
     });
   }
 
   selectCategory(cat: EntryCategory) {
     this.selectedCategory = this.selectedCategory === cat ? '' : cat;
+  }
+
+  selectTag(tag: string) {
+    this.selectedTag = this.selectedTag === tag ? '' : tag;
   }
 }

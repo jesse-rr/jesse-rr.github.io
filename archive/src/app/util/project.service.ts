@@ -21,7 +21,7 @@ export class EntryService {
         {
             id: '3',
             title: 'Mobile App',
-            category: 'Idea',
+            category: 'File',
             tags: ['Mobile'],
             route: '/entry/3'
         },
@@ -35,21 +35,24 @@ export class EntryService {
         {
             id: '5',
             title: 'Data Visualizer',
-            category: 'Idea',
+            category: 'File',
             tags: ['Web', 'Data'],
             route: '/entry/5'
         },
         {
             id: '6',
-            title: 'CLI Toolchain',
-            category: 'Undefined',
-            tags: ['Tools'],
-            route: '/entry/6'
+            title: 'CLI Blackjack',
+            category: 'Project',
+            tags: ['Game'],
+            route: '/entry/6',
+            content: {
+              readMe: "CLI_Blackjack/main/Readme.md"
+            }
         },
         {
             id: '7',
             title: 'Design System',
-            category: 'Idea',
+            category: 'File',
             tags: ['Web'],
             route: '/entry/7'
         },
@@ -67,6 +70,12 @@ export class EntryService {
     }
 
     getCategories(): EntryCategory[] {
-        return ['Project', 'Idea', 'Undefined'];
+        return ['Project', 'File', 'Undefined'];
     }
+
+  getTags(): string[] {
+    return [...new Set(
+      this.entries.flatMap(e => e.tags ?? [])
+    )];
+  }
 }

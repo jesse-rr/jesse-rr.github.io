@@ -1,22 +1,32 @@
 <app-header></app-header>
 
 <main class="home">
-    <div class="toolbar">
-        <div class="categories">
-            <button *ngFor="let cat of categories" class="cat-btn" [class.active]="selectedCategory === cat"
-                (click)="selectCategory(cat)">
-                {{ cat }}
-            </button>
-        </div>
-        <input class="search" type="text" placeholder="Search entries..." [(ngModel)]="searchQuery" />
+  <div class="toolbar">
+    <div class="categories">
+      <button *ngFor="let cat of categories" class="cat-btn" [class.active]="selectedCategory === cat"
+              (click)="selectCategory(cat)">
+        {{ cat }}
+      </button>
     </div>
 
-    <div class="grid">
-        <ng-container *ngFor="let e of filtered">
-            <app-folder *ngIf="e.category === 'Project'" [entry]="e"></app-folder>
-            <app-file *ngIf="e.category === 'Idea'" [entry]="e"></app-file>
-            <app-unidentified *ngIf="e.category === 'Undefined'" [entry]="e"></app-unidentified>
-        </ng-container>
-        <div *ngIf="filtered.length === 0" class="empty">No entries found.</div>
+    <input class="search" type="text" placeholder="Search entries..." [(ngModel)]="searchQuery" />
+
+    <div class="tag-select">
+      <select [(ngModel)]="selectedTag" class="tag-dropdown">
+        <option value="">All tags</option>
+        <option *ngFor="let tag of tags" [value]="tag">
+          {{ tag }}
+        </option>
+      </select>
     </div>
+  </div>
+
+  <div class="grid">
+    <ng-container *ngFor="let e of filtered">
+      <app-folder *ngIf="e.category === 'Project'" [entry]="e"></app-folder>
+      <app-file *ngIf="e.category === 'File'" [entry]="e"></app-file>
+      <app-unidentified *ngIf="e.category === 'Undefined'" [entry]="e"></app-unidentified>
+    </ng-container>
+    <div *ngIf="filtered.length === 0" class="empty">No entries found.</div>
+  </div>
 </main>
