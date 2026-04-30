@@ -2,7 +2,7 @@ import { Component, Input, Output, EventEmitter, HostListener, ElementRef } from
 import { CommonModule } from '@angular/common';
 import { DriveFile, FOLDER_MIME } from '../../models/drive.model';
 
-export type ContextMenuAction = 'rename' | 'delete' | 'move' | 'play';
+export type ContextMenuAction = 'rename' | 'delete' | 'move' | 'play' | 'download';
 
 @Component({
   selector: 'app-context-menu',

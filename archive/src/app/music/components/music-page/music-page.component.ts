@@ -1,6 +1,7 @@
 import { Component, OnInit, OnDestroy, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Subscription } from 'rxjs';
+import JSZip from 'jszip';
 import { HeaderComponent } from '../../../components/header/header.component';
 import { DriveLoginComponent } from '../drive-login/drive-login.component';
 import { MusicBreadcrumbComponent } from '../music-breadcrumb/music-breadcrumb.component';
@@ -230,6 +231,10 @@ export class MusicPageComponent implements OnInit, OnDestroy {
       case 'play':
         this.startPlayback(target);
         break;
+
+      case 'download':
+        this.downloadItem(target);
+        break;
     }
   }
 
@@ -379,6 +384,81 @@ export class MusicPageComponent implements OnInit, OnDestroy {
     if (this.audioBlobUrl) {
       URL.revokeObjectURL(this.audioBlobUrl);
       this.audioBlobUrl = null;
+    }
+  }
+
+  private async downloadItem(file: DriveFile) {
+    if (file.mimeType === FOLDER_MIME) {
+      await this.downloadFolder(file);
+    } else {
+      await this.downloadFile(file);
+    }
+  }
+
+  private async downloadFile(file: DriveFile) {
+    try {
+      this.showToast(`Downloading "${file.name}"...`);
+      const url = this.driveService.getStreamUrl(file.id);
+      const res = await fetch(url, {
+        headers: { Authorization: `Bearer ${this.authService.accessToken}` }
+      });
+      if (!res.ok) throw new Error(`Download failed: ${res.status}`);
+
+      const blob = await res.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = file.name;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(blobUrl);
+    } catch (err) {
+      this.showToast('Failed to download');
+      console.error(err);
+    }
+  }
+
+  private async downloadFolder(folder: DriveFile) {
+    try {
+      this.showToast(`Preparing "${folder.name}" for download...`);
+      const files = await this.driveService.listFolder(folder.id);
+      const audioFiles = files.filter(f => f.mimeType !== FOLDER_MIME);
+
+      if (audioFiles.length === 0) {
+        this.showToast('Folder is empty');
+        return;
+      }
+
+      const zip = new JSZip();
+
+      for (let i = 0; i < audioFiles.length; i++) {
+        const file = audioFiles[i];
+        this.showToast(`Downloading ${i + 1}/${audioFiles.length}: ${file.name}`);
+        const url = this.driveService.getStreamUrl(file.id);
+        const res = await fetch(url, {
+          headers: { Authorization: `Bearer ${this.authService.accessToken}` }
+        });
+        if (res.ok) {
+          const blob = await res.blob();
+          zip.file(file.name, blob);
+        }
+      }
+
+      this.showToast('Creating zip file...');
+      const zipBlob = await zip.generateAsync({ type: 'blob' });
+      const blobUrl = URL.createObjectURL(zipBlob);
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = `${folder.name}.zip`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(blobUrl);
+      this.showToast(`Downloaded "${folder.name}.zip"`);
+    } catch (err) {
+      this.showToast('Failed to download folder');
+      console.error(err);
     }
   }
 
