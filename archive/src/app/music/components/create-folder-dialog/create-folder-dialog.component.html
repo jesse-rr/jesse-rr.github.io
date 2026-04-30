@@ -1,0 +1,15 @@
+<div class="overlay" (click)="cancel.emit()"></div>
+<div class="dialog" (keydown)="onKeydown($event)">
+  <h3 class="dialog-title">New Playlist</h3>
+  <input
+    class="dialog-input"
+    type="text"
+    [(ngModel)]="folderName"
+    (keydown.enter)="onSubmit()"
+    autofocus
+    placeholder="Enter playlist name" />
+  <div class="dialog-actions">
+    <button class="dialog-btn" (click)="cancel.emit()">Cancel</button>
+    <button class="dialog-btn primary" (click)="onSubmit()" [disabled]="!folderName.trim()">Create</button>
+  </div>
+</div>

@@ -10,6 +10,7 @@
     top: 0;
     z-index: 100;
     backdrop-filter: blur(10px);
+    gap: 24px;
 
   a {
     text-decoration: none;
@@ -28,3 +29,26 @@
     letter-spacing: 0.05em;
     color: var(--text);
 }
+
+.nav-links {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.nav-link {
+    font-size: 0.85rem;
+    font-weight: 500;
+    letter-spacing: 0.03em;
+    color: var(--text-muted);
+    text-decoration: none;
+    padding: 4px 8px;
+    border-radius: 6px;
+    transition: all 0.2s;
+
+    &:hover {
+        color: var(--accent) !important;
+    }
+}
+

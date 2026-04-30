@@ -1,0 +1,118 @@
+:host {
+  display: block;
+  margin: 8px;
+}
+
+.folder {
+  cursor: pointer;
+  width: 100%;
+  aspect-ratio: 3 / 2;
+  display: flex;
+  flex-direction: column;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.15));
+  transition: transform 0.2s ease-in-out;
+
+  &:hover {
+    .folder-body {
+      transform: skewX(-12deg) scaleY(0.9);
+    }
+
+    .folder-vinyl {
+      transform: translate(-50%, -50%) rotate(90deg);
+    }
+  }
+
+  &:active {
+    transform: scale(0.97);
+  }
+}
+
+.folder-tab {
+  background: var(--folder-tab);
+  width: 50%;
+  padding: 6px 12px;
+  border-radius: 8px 8px 0 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--folder-text);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  position: relative;
+  z-index: 10;
+
+  .folder-icon {
+    flex-shrink: 0;
+    opacity: 0.6;
+  }
+
+  .folder-title {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex: 1;
+  }
+}
+
+.folder-body {
+  background: var(--folder-body);
+  flex: 1;
+  border-radius: 8px 8px 8px 0;
+  z-index: 11;
+  margin-top: -1px;
+  position: relative;
+  transform-origin: bottom left;
+  transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  will-change: transform;
+  overflow: hidden;
+}
+
+.folder-inside {
+  display: block;
+  position: absolute;
+  border-top-right-radius: 6px;
+  top: 10%;
+  left: 0;
+  right: 3%;
+  bottom: 0;
+  background: var(--folder-tab);
+  z-index: 8;
+  transform: translateY(0);
+}
+
+.folder-vinyl {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 48%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    var(--folder-placeholder) 20%,
+    transparent 21%,
+    transparent 28%,
+    var(--folder-placeholder) 29%,
+    var(--folder-placeholder) 30%,
+    transparent 31%,
+    transparent 45%,
+    var(--folder-placeholder) 46%,
+    var(--folder-placeholder) 47%,
+    transparent 48%
+  );
+  opacity: 0.25;
+  transition: transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.vinyl-inner {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 16%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: var(--folder-text);
+  opacity: 0.3;
+}

@@ -1,0 +1,52 @@
+<div class="overlay" (click)="cancel.emit()"></div>
+<div class="dialog" (keydown)="onKeydown($event)">
+  <h3 class="dialog-title">Move "{{ fileName }}"</h3>
+
+  <div class="folder-tree" *ngIf="!loading">
+    <ng-container *ngFor="let node of folders">
+      <ng-container *ngTemplateOutlet="folderNode; context: { $implicit: node, depth: 0 }"></ng-container>
+    </ng-container>
+  </div>
+
+  <div class="loading" *ngIf="loading">Loading folders...</div>
+
+  <div class="dialog-actions">
+    <button class="dialog-btn" (click)="cancel.emit()">Cancel</button>
+    <button
+      class="dialog-btn primary"
+      (click)="onMove()"
+      [disabled]="!selectedFolderId">
+      Move here
+    </button>
+  </div>
+</div>
+
+<ng-template #folderNode let-node let-depth="depth">
+  <div
+    class="tree-item"
+    [class.selected]="selectedFolderId === node.file.id"
+    [style.padding-left.px]="depth * 20 + 12"
+    (click)="selectFolder(node)">
+    <button class="expand-btn" (click)="toggleExpand(node); $event.stopPropagation()" *ngIf="node.children === undefined || (node.children && node.children.length > 0)">
+      <svg
+        width="12" height="12" viewBox="0 0 24 24" fill="currentColor"
+        [style.transform]="node.expanded ? 'rotate(90deg)' : 'rotate(0deg)'"
+        style="transition: transform 0.2s">
+        <polygon points="6 4 20 12 6 20 6 4"/>
+      </svg>
+    </button>
+    <div class="expand-spacer" *ngIf="node.children && node.children.length === 0"></div>
+
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+    </svg>
+    <span class="tree-name">{{ node.file.name }}</span>
+    <span class="tree-loading" *ngIf="node.loading">...</span>
+  </div>
+
+  <ng-container *ngIf="node.expanded && node.children">
+    <ng-container *ngFor="let child of node.children">
+      <ng-container *ngTemplateOutlet="folderNode; context: { $implicit: child, depth: depth + 1 }"></ng-container>
+    </ng-container>
+  </ng-container>
+</ng-template>

@@ -1,0 +1,15 @@
+<div class="overlay" (click)="cancel.emit()"></div>
+<div class="dialog" (keydown)="onKeydown($event)">
+  <h3 class="dialog-title">Rename</h3>
+  <input
+    class="dialog-input"
+    type="text"
+    [(ngModel)]="newName"
+    (keydown.enter)="onSubmit()"
+    autofocus
+    placeholder="Enter new name" />
+  <div class="dialog-actions">
+    <button class="dialog-btn" (click)="cancel.emit()">Cancel</button>
+    <button class="dialog-btn primary" (click)="onSubmit()">Rename</button>
+  </div>
+</div>

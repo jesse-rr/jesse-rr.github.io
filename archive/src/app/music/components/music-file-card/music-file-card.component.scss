@@ -1,0 +1,167 @@
+:host {
+  display: block;
+}
+
+.track {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  transition: background 0.15s ease;
+  cursor: default;
+
+  &:hover {
+    background: var(--btn-hover);
+
+    .track-play {
+      opacity: 1;
+    }
+
+    .index-num {
+      opacity: 0;
+    }
+  }
+
+  &.playing {
+    .track-name {
+      color: var(--accent);
+    }
+  }
+}
+
+.track-index {
+  width: 28px;
+  text-align: center;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.index-num {
+  font-size: 0.8rem;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  color: var(--text-muted);
+  transition: opacity 0.15s;
+}
+
+.equalizer {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 2px;
+  height: 14px;
+}
+
+.bar {
+  width: 3px;
+  background: var(--accent);
+  border-radius: 1px;
+  animation: equalize 0.8s ease-in-out infinite;
+
+  &:nth-child(1) {
+    animation-delay: 0s;
+    height: 60%;
+  }
+  &:nth-child(2) {
+    animation-delay: 0.2s;
+    height: 100%;
+  }
+  &:nth-child(3) {
+    animation-delay: 0.4s;
+    height: 40%;
+  }
+}
+
+@keyframes equalize {
+  0%, 100% { transform: scaleY(0.3); }
+  50% { transform: scaleY(1); }
+}
+
+.track-play {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: var(--btn-bg);
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0.5;
+  transition: all 0.2s;
+  flex-shrink: 0;
+
+  &:hover {
+    background: var(--accent);
+    color: #fff;
+    opacity: 1;
+    transform: scale(1.1);
+  }
+}
+
+.track-info {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.track-name {
+  font-size: 0.85rem;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: color 0.2s;
+}
+
+.track-ext {
+  font-size: 0.65rem;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: var(--btn-bg);
+  border: 1px solid var(--border);
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+.track-size {
+  font-size: 0.75rem;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  color: var(--text-muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+  min-width: 60px;
+  text-align: right;
+}
+
+.track-more {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 6px;
+  transition: all 0.2s;
+  flex-shrink: 0;
+
+  &:hover {
+    color: var(--text);
+    background: var(--btn-hover);
+  }
+}
+
+@media (max-width: 600px) {
+  .track-size {
+    display: none;
+  }
+
+  .track-ext {
+    display: none;
+  }
+}
