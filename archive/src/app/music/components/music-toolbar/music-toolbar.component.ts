@@ -10,6 +10,7 @@ import { CommonModule } from '@angular/common';
 export class MusicToolbarComponent {
   @Output() createFolder = new EventEmitter<void>();
   @Output() uploadFiles = new EventEmitter<FileList>();
+  @Output() youtubeDownload = new EventEmitter<void>();
   @Output() refresh = new EventEmitter<void>();
 
   @ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;

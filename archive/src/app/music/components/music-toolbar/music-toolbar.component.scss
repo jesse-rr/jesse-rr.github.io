@@ -51,6 +51,17 @@
     }
   }
 
+  &.youtube {
+    background: rgba(255, 0, 51, 0.1);
+    color: #ff0033;
+    border-color: rgba(255, 0, 51, 0.25);
+
+    &:hover {
+      background: rgba(255, 0, 51, 0.18);
+      border-color: rgba(255, 0, 51, 0.4);
+    }
+  }
+
   &.icon-only {
     padding: 8px;
 
