@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { GoogleAuthService } from './google-auth.service';
 import { DriveService } from './drive.service';
 
-const COBALT_API = 'https://cobalt-api-01no.onrender.com';
+const YT_DLP_API = 'https://your-new-api.onrender.com'; // Replace with your new Render URL
 
 @Injectable({ providedIn: 'root' })
 export class YoutubeDownloadService {
@@ -19,83 +19,36 @@ export class YoutubeDownloadService {
   ): Promise<string> {
     onProgress?.('Requesting download...');
 
-    const cobaltPayload: any = {
-      url: url,
-      downloadMode: format === 'mp3' ? 'audio' : 'auto',
-      filenameStyle: 'pretty',
-    };
-
-    if (format === 'mp3') {
-      cobaltPayload.audioFormat = 'mp3';
-    }
-
-    const cobaltRes = await fetch(`${COBALT_API}/`, {
+    // First get video info for the filename
+    const infoRes = await fetch(`${YT_DLP_API}/info`, {
       method: 'POST',
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(cobaltPayload),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url }),
     });
 
-    if (!cobaltRes.ok) {
-      const errText = await cobaltRes.text();
-      throw new Error(`Download service error: ${errText}`);
+    if (!infoRes.ok) {
+      const err = await infoRes.json();
+      throw new Error(`Failed to get video info: ${err.error}`);
     }
 
-    const data = await cobaltRes.json();
-    if (data.status === 'error') {
-      const errorCode = data.error?.code || 'Download failed';
-      let message = errorCode;
+    const info = await infoRes.json();
+    onProgress?.('Downloading video...');
 
-      switch (errorCode) {
-        case 'error.api.youtube.login':
-          message = 'YouTube requires login for this video (likely age-restricted or official music). Your self-hosted Cobalt instance needs cookies to bypass this.';
-          break;
-        case 'error.api.youtube.rate_limit':
-          message = 'YouTube is rate-limiting your Cobalt instance. Try again later.';
-          break;
-        case 'error.api.youtube.unavailable':
-          message = 'This video is unavailable or private.';
-          break;
-      }
-      throw new Error(message);
+    // Download the actual file
+    const downloadRes = await fetch(`${YT_DLP_API}/download`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url, format }),
+    });
+
+    if (!downloadRes.ok) {
+      const err = await downloadRes.json();
+      throw new Error(`Download failed: ${err.error}`);
     }
 
-    let downloadUrl: string;
-
-    if (data.status === 'tunnel' || data.status === 'redirect') {
-      downloadUrl = data.url;
-    } else if (data.status === 'picker') {
-      if (data.audio) {
-        downloadUrl = data.audio;
-      } else if (data.picker && data.picker.length > 0) {
-        downloadUrl = data.picker[0].url;
-      } else {
-        throw new Error('No downloadable content found');
-      }
-    } else {
-      throw new Error(`Unexpected response status: ${data.status}`);
-    }
-
-    onProgress?.('Downloading file...');
-
-    const fileRes = await fetch(downloadUrl);
-    if (!fileRes.ok) {
-      throw new Error(`Failed to download file: ${fileRes.status}`);
-    }
-
-    const blob = await fileRes.blob();
-
-    let filename = this.extractFilename(url, format);
-    const disposition = fileRes.headers.get('content-disposition');
-    if (disposition) {
-      const match = disposition.match(/filename\*?=(?:UTF-8'')?["']?([^"';\n]+)/i);
-      if (match) {
-        filename = decodeURIComponent(match[1]);
-      }
-    }
-
+    const blob = await downloadRes.blob();
+    
+    let filename = this.sanitizeFilename(info.title || 'youtube_video');
     if (!filename.endsWith(`.${format}`)) {
       filename = `${filename}.${format}`;
     }
@@ -107,17 +60,10 @@ export class YoutubeDownloadService {
     });
 
     await this.driveService.uploadFile(file, folderId);
-
     return filename;
   }
 
-  private extractFilename(url: string, format: string): string {
-    try {
-      const parsed = new URL(url);
-      const videoId = parsed.searchParams.get('v') || parsed.pathname.split('/').pop() || 'video';
-      return `youtube_${videoId}`;
-    } catch {
-      return `youtube_download`;
-    }
+  private sanitizeFilename(name: string): string {
+    return name.replace(/[<>:"/\\|?*]/g, '_').substring(0, 200);
   }
 }
