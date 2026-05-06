@@ -9,7 +9,7 @@ export class YoutubeDownloadService {
   constructor(
     private authService: GoogleAuthService,
     private driveService: DriveService
-  ) {}
+  ) { }
 
   async download(
     url: string,
@@ -44,9 +44,22 @@ export class YoutubeDownloadService {
     }
 
     const data = await cobaltRes.json();
-
     if (data.status === 'error') {
-      throw new Error(data.error?.code || 'Download failed');
+      const errorCode = data.error?.code || 'Download failed';
+      let message = errorCode;
+
+      switch (errorCode) {
+        case 'error.api.youtube.login':
+          message = 'YouTube requires login for this video (likely age-restricted or official music). Your self-hosted Cobalt instance needs cookies to bypass this.';
+          break;
+        case 'error.api.youtube.rate_limit':
+          message = 'YouTube is rate-limiting your Cobalt instance. Try again later.';
+          break;
+        case 'error.api.youtube.unavailable':
+          message = 'This video is unavailable or private.';
+          break;
+      }
+      throw new Error(message);
     }
 
     let downloadUrl: string;
