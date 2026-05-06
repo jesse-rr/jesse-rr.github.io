@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { GoogleAuthService } from './google-auth.service';
 import { DriveService } from './drive.service';
 
-const YT_DLP_API = 'https://your-new-api.onrender.com'; // Replace with your new Render URL
+const YT_DLP_API = 'https://cobalt-api-01no.onrender.com'
 
 @Injectable({ providedIn: 'root' })
 export class YoutubeDownloadService {
