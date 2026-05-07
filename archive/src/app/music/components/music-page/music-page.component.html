@@ -60,6 +60,7 @@
             [file]="file"
             [index]="i + 1"
             [isPlaying]="playingFile?.id === file.id"
+            [isPaused]="playingFile?.id === file.id && !audioPlaying"
             (play)="onPlayFile(file)"
             (contextMenu)="onContextMenu($event)">
           </app-music-file-card>
@@ -85,7 +86,7 @@
         (pause)="onAudioPause()"
         (timeupdate)="onAudioTimeUpdate()"
         (loadedmetadata)="onAudioLoaded()"
-        (ended)="onStopPlayback()">
+        (ended)="onAudioEnded()">
       </audio>
 
       <button class="player-btn play-btn" (click)="togglePlayPause()" [disabled]="audioLoading">

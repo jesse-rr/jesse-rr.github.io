@@ -12,6 +12,7 @@ export class MusicFileCardComponent {
   @Input() file!: DriveFile;
   @Input() index: number = 0;
   @Input() isPlaying: boolean = false;
+  @Input() isPaused: boolean = false;
   @Output() play = new EventEmitter<void>();
   @Output() contextMenu = new EventEmitter<{ x: number; y: number; file: DriveFile }>();
 

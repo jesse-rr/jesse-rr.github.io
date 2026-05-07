@@ -1,4 +1,4 @@
-<div class="track" [class.playing]="isPlaying" (contextmenu)="onContextMenu($event)">
+<div class="track" [class.playing]="isPlaying" [class.paused]="isPaused" (contextmenu)="onContextMenu($event)">
   <div class="track-index">
     <span class="index-num" *ngIf="!isPlaying">{{ index }}</span>
     <div class="equalizer" *ngIf="isPlaying">
@@ -9,10 +9,10 @@
   </div>
 
   <button class="track-play" (click)="onPlay($event)">
-    <svg *ngIf="!isPlaying" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+    <svg *ngIf="!isPlaying || isPaused" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
       <polygon points="5 3 19 12 5 21 5 3"/>
     </svg>
-    <svg *ngIf="isPlaying" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+    <svg *ngIf="isPlaying && !isPaused" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
       <rect x="6" y="4" width="4" height="16"/>
       <rect x="14" y="4" width="4" height="16"/>
     </svg>

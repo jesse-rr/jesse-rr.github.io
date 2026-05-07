@@ -14,6 +14,12 @@ export class MusicToolbarComponent {
 
   @ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;
 
+  deleteAfterUpload = false;
+
+  constructor() {
+    this.deleteAfterUpload = localStorage.getItem('deleteAfterUpload') === 'true';
+  }
+
   triggerUpload() {
     this.fileInput.nativeElement.click();
   }
@@ -24,5 +30,11 @@ export class MusicToolbarComponent {
       this.uploadFiles.emit(input.files);
       input.value = '';
     }
+  }
+
+  onToggleDelete(event: Event) {
+    const input = event.target as HTMLInputElement;
+    this.deleteAfterUpload = input.checked;
+    localStorage.setItem('deleteAfterUpload', this.deleteAfterUpload.toString());
   }
 }

@@ -380,6 +380,20 @@ export class MusicPageComponent implements OnInit, OnDestroy {
     this.audioDuration = 0;
   }
 
+  onAudioEnded() {
+    this.playNext();
+  }
+
+  playNext() {
+    if (!this.playingFile) return;
+    const index = this.audioFiles.findIndex(f => f.id === this.playingFile!.id);
+    if (index >= 0 && index < this.audioFiles.length - 1) {
+      this.onPlayFile(this.audioFiles[index + 1]);
+    } else {
+      this.onStopPlayback();
+    }
+  }
+
   private cleanupAudio() {
     if (this.audioBlobUrl) {
       URL.revokeObjectURL(this.audioBlobUrl);

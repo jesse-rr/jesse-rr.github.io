@@ -74,3 +74,30 @@
 .hidden-input {
   display: none;
 }
+
+.delete-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  cursor: pointer;
+  user-select: none;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  transition: color 0.2s;
+
+  &:hover {
+    color: var(--text);
+  }
+
+  input {
+    cursor: pointer;
+    accent-color: var(--accent);
+    width: 16px;
+    height: 16px;
+  }
+
+  .toggle-text {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+}

@@ -27,6 +27,12 @@
       color: var(--accent);
     }
   }
+
+  &.paused {
+    .bar {
+      animation-play-state: paused;
+    }
+  }
 }
 
 .track-index {
