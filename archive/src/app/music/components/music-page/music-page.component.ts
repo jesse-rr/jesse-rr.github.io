@@ -12,10 +12,8 @@ import { ContextMenuComponent, ContextMenuAction } from '../context-menu/context
 import { RenameDialogComponent } from '../rename-dialog/rename-dialog.component';
 import { MoveDialogComponent } from '../move-dialog/move-dialog.component';
 import { CreateFolderDialogComponent } from '../create-folder-dialog/create-folder-dialog.component';
-import { YoutubeDownloadDialogComponent, YoutubeDownloadRequest } from '../youtube-download-dialog/youtube-download-dialog.component';
 import { GoogleAuthService } from '../../services/google-auth.service';
 import { DriveService } from '../../services/drive.service';
-import { YoutubeDownloadService } from '../../services/youtube-download.service';
 import { DriveFile, BreadcrumbItem, FOLDER_MIME } from '../../models/drive.model';
 
 @Component({
@@ -31,8 +29,7 @@ import { DriveFile, BreadcrumbItem, FOLDER_MIME } from '../../models/drive.model
     ContextMenuComponent,
     RenameDialogComponent,
     MoveDialogComponent,
-    CreateFolderDialogComponent,
-    YoutubeDownloadDialogComponent,
+    CreateFolderDialogComponent
   ],
   templateUrl: './music-page.component.html',
   styleUrl: './music-page.component.scss'
@@ -58,9 +55,6 @@ export class MusicPageComponent implements OnInit, OnDestroy {
   moveTarget: DriveFile | null = null;
 
   createFolderDialogVisible = false;
-
-  youtubeDialogVisible = false;
-  youtubeDownloading = false;
 
   uploadProgress: number | null = null;
 
@@ -89,8 +83,7 @@ export class MusicPageComponent implements OnInit, OnDestroy {
 
   constructor(
     private authService: GoogleAuthService,
-    private driveService: DriveService,
-    private youtubeService: YoutubeDownloadService
+    private driveService: DriveService
   ) {}
 
   ngOnInit() {
@@ -192,37 +185,6 @@ export class MusicPageComponent implements OnInit, OnDestroy {
 
     this.uploadProgress = null;
     await this.loadFolder(this.currentFolderId);
-  }
-
-  onYoutubeDownload() {
-    this.youtubeDialogVisible = true;
-  }
-
-  async onYoutubeDownloadConfirm(request: YoutubeDownloadRequest) {
-    this.youtubeDialogVisible = false;
-    this.youtubeDownloading = true;
-
-    try {
-      const filename = await this.youtubeService.download(
-        request.url,
-        request.format,
-        request.folderId,
-        (status) => this.showToast(status)
-      );
-      this.showToast(`Downloaded "${filename}"`);
-      if (this.currentFolderId) {
-        await this.loadFolder(this.currentFolderId);
-      }
-    } catch (err: any) {
-      this.showToast(`YouTube download failed: ${err.message || 'Unknown error'}`);
-      console.error(err);
-    } finally {
-      this.youtubeDownloading = false;
-    }
-  }
-
-  onCancelYoutubeDownload() {
-    this.youtubeDialogVisible = false;
   }
 
   onContextMenu(event: { x: number; y: number; file: DriveFile }) {

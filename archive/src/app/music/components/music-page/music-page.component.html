@@ -15,7 +15,6 @@
     <app-music-toolbar
       (createFolder)="onCreateFolder()"
       (uploadFiles)="onUploadFiles($event)"
-      (youtubeDownload)="onYoutubeDownload()"
       (refresh)="refresh()">
     </app-music-toolbar>
 
@@ -26,10 +25,6 @@
       <span class="progress-text">Uploading... {{ uploadProgress }}%</span>
     </div>
 
-    <div class="yt-progress-banner" *ngIf="youtubeDownloading">
-      <div class="yt-spinner"></div>
-      <span>Processing YouTube download...</span>
-    </div>
 
     <div class="error-banner" *ngIf="error">
       <span>{{ error }}</span>
@@ -170,11 +165,6 @@
     (cancel)="onCancelCreateFolder()">
   </app-create-folder-dialog>
 
-  <app-youtube-download-dialog
-    *ngIf="youtubeDialogVisible"
-    (download)="onYoutubeDownloadConfirm($event)"
-    (cancel)="onCancelYoutubeDownload()">
-  </app-youtube-download-dialog>
 
   <div class="toast" *ngIf="toastMessage" [class.visible]="toastMessage">
     {{ toastMessage }}
