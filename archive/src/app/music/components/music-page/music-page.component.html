@@ -47,6 +47,7 @@
             *ngFor="let folder of folders"
             [file]="folder"
             (open)="navigateToFolder(folder)"
+            (dropFiles)="onDropOnFolder(folder)"
             (contextMenu)="onContextMenu($event)">
           </app-music-folder-card>
         </div>
@@ -61,7 +62,11 @@
             [index]="i + 1"
             [isPlaying]="playingFile?.id === file.id"
             [isPaused]="playingFile?.id === file.id && !audioPlaying"
+            [isSelected]="selectedFiles.has(file.id)"
             (play)="onPlayFile(file)"
+            (dragStart)="onDragStart($event, file)"
+            (dragEnd)="onDragEnd()"
+            (select)="toggleSelection(file, $event)"
             (contextMenu)="onContextMenu($event)">
           </app-music-file-card>
         </div>

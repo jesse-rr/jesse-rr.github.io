@@ -28,6 +28,12 @@
     }
   }
 
+  &.selected {
+    background: var(--accent-alpha);
+    border-left: 3px solid var(--accent);
+    padding-left: 13px;
+  }
+
   &.paused {
     .bar {
       animation-play-state: paused;

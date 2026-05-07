@@ -57,6 +57,8 @@ export class MusicPageComponent implements OnInit, OnDestroy {
   createFolderDialogVisible = false;
 
   uploadProgress: number | null = null;
+  selectedFiles: Set<string> = new Set();
+  isDragging = false;
 
   playingFile: DriveFile | null = null;
   audioBlobUrl: string | null = null;
@@ -171,6 +173,13 @@ export class MusicPageComponent implements OnInit, OnDestroy {
 
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
+      
+      const duplicate = this.files.find(f => f.name.toLowerCase() === file.name.toLowerCase());
+      if (duplicate) {
+        this.showToast(`Error: "${file.name}" already exists in this folder.`);
+        continue;
+      }
+
       try {
         this.uploadProgress = 0;
         await this.driveService.uploadFile(file, this.currentFolderId, (pct) => {
@@ -188,10 +197,76 @@ export class MusicPageComponent implements OnInit, OnDestroy {
   }
 
   onContextMenu(event: { x: number; y: number; file: DriveFile }) {
+    if (!this.selectedFiles.has(event.file.id)) {
+      this.selectedFiles.clear();
+      this.selectedFiles.add(event.file.id);
+    }
     this.contextMenuX = event.x;
     this.contextMenuY = event.y;
     this.contextMenuTarget = event.file;
     this.contextMenuVisible = true;
+  }
+
+  toggleSelection(file: DriveFile, event: MouseEvent) {
+    if (event.ctrlKey || event.metaKey) {
+      if (this.selectedFiles.has(file.id)) {
+        this.selectedFiles.delete(file.id);
+      } else {
+        this.selectedFiles.add(file.id);
+      }
+    } else if (event.shiftKey && this.selectedFiles.size > 0) {
+      const allFiles = [...this.folders, ...this.audioFiles];
+      const fileIds = allFiles.map(f => f.id);
+      const lastSelectedId = Array.from(this.selectedFiles).pop()!;
+      const lastIndex = fileIds.indexOf(lastSelectedId);
+      const currentIndex = fileIds.indexOf(file.id);
+      
+      const start = Math.min(lastIndex, currentIndex);
+      const end = Math.max(lastIndex, currentIndex);
+      
+      for (let i = start; i <= end; i++) {
+        this.selectedFiles.add(fileIds[i]);
+      }
+    } else {
+      this.selectedFiles.clear();
+      this.selectedFiles.add(file.id);
+    }
+  }
+
+  onDragStart(event: DragEvent, file: DriveFile) {
+    if (!this.selectedFiles.has(file.id)) {
+      this.selectedFiles.clear();
+      this.selectedFiles.add(file.id);
+    }
+    this.isDragging = true;
+    event.dataTransfer?.setData('text/plain', JSON.stringify(Array.from(this.selectedFiles)));
+    event.dataTransfer!.effectAllowed = 'move';
+  }
+
+  onDragEnd() {
+    this.isDragging = false;
+  }
+
+  async onDropOnFolder(targetFolder: DriveFile) {
+    if (!this.currentFolderId || this.selectedFiles.size === 0) return;
+    
+    const fileIdsToMove = Array.from(this.selectedFiles).filter(id => id !== targetFolder.id);
+    if (fileIdsToMove.length === 0) return;
+
+    this.loading = true;
+    try {
+      for (const fileId of fileIdsToMove) {
+        await this.driveService.move(fileId, targetFolder.id, this.currentFolderId);
+      }
+      this.showToast(`Moved ${fileIdsToMove.length} item(s) to ${targetFolder.name}`);
+      this.selectedFiles.clear();
+      await this.loadFolder(this.currentFolderId);
+    } catch (err) {
+      this.showToast('Failed to move some items');
+      console.error(err);
+    } finally {
+      this.loading = false;
+    }
   }
 
   onCloseContextMenu() {
@@ -211,13 +286,18 @@ export class MusicPageComponent implements OnInit, OnDestroy {
         break;
 
       case 'delete':
-        if (confirm(`Delete "${target.name}"? This cannot be undone.`)) {
+        const count = this.selectedFiles.size;
+        const msg = count > 1 ? `Delete ${count} items?` : `Delete "${target.name}"?`;
+        if (confirm(`${msg} This cannot be undone.`)) {
           try {
-            await this.driveService.delete(target.id);
+            for (const id of this.selectedFiles) {
+              await this.driveService.delete(id);
+            }
             await this.loadFolder(this.currentFolderId);
-            this.showToast(`Deleted "${target.name}"`);
+            this.showToast(`Deleted ${count} item(s)`);
+            this.selectedFiles.clear();
           } catch (err) {
-            this.showToast('Failed to delete');
+            this.showToast('Failed to delete some items');
             console.error(err);
           }
         }

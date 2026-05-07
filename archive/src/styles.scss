@@ -16,6 +16,7 @@
   --header-bg: #E1E1E3;
   --border: rgba(0, 0, 0, 0.08);
   --accent: #2ec4b6;
+  --accent-alpha: rgba(46, 196, 182, 0.1);
   --btn-bg: rgba(0, 0, 0, 0.04);
   --btn-color: #1a1a1a;
   --btn-border: rgba(0, 0, 0, 0.1);
@@ -36,6 +37,7 @@ body.dark-mode {
   --header-bg: rgba(12, 12, 14, 0.85);
   --border: rgba(255, 255, 255, 0.08);
   --accent: #3ddc97;
+  --accent-alpha: rgba(61, 220, 151, 0.1);
   --btn-bg: rgba(255, 255, 255, 0.06);
   --btn-color: #e8e8ed;
   --btn-border: rgba(255, 255, 255, 0.1);

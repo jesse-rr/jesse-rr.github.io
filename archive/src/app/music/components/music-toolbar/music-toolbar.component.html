@@ -26,12 +26,6 @@
       accept="audio/*"
       class="hidden-input"
       (change)="onFileSelected($event)" />
-
-    <label class="delete-toggle" title="Delete local files after upload (if applicable)">
-      <input type="checkbox" [checked]="deleteAfterUpload" (change)="onToggleDelete($event)">
-      <span class="toggle-slider"></span>
-      <span class="toggle-text">Delete after upload</span>
-    </label>
   </div>
 
   <button class="tool-btn icon-only" (click)="refresh.emit()" title="Refresh">

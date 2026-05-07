@@ -1,4 +1,12 @@
-<div class="track" [class.playing]="isPlaying" [class.paused]="isPaused" (contextmenu)="onContextMenu($event)">
+<div class="track" 
+  [class.playing]="isPlaying" 
+  [class.paused]="isPaused" 
+  [class.selected]="isSelected"
+  draggable="true"
+  (dragstart)="dragStart.emit($event)"
+  (dragend)="dragEnd.emit()"
+  (click)="select.emit($event)"
+  (contextmenu)="onContextMenu($event)">
   <div class="track-index">
     <span class="index-num" *ngIf="!isPlaying">{{ index }}</span>
     <div class="equalizer" *ngIf="isPlaying">

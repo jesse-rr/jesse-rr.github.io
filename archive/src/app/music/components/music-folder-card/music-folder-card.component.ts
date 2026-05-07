@@ -11,7 +11,25 @@ import { DriveFile } from '../../models/drive.model';
 export class MusicFolderCardComponent {
   @Input() file!: DriveFile;
   @Output() open = new EventEmitter<void>();
+  @Output() dropFiles = new EventEmitter<void>();
   @Output() contextMenu = new EventEmitter<{ x: number; y: number; file: DriveFile }>();
+
+  isDragOver = false;
+
+  onDragOver(event: DragEvent) {
+    event.preventDefault();
+    this.isDragOver = true;
+  }
+
+  onDragLeave() {
+    this.isDragOver = false;
+  }
+
+  onDrop(event: DragEvent) {
+    event.preventDefault();
+    this.isDragOver = false;
+    this.dropFiles.emit();
+  }
 
   onClick() {
     this.open.emit();

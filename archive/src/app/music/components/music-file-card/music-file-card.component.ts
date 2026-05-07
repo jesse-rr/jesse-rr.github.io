@@ -13,7 +13,11 @@ export class MusicFileCardComponent {
   @Input() index: number = 0;
   @Input() isPlaying: boolean = false;
   @Input() isPaused: boolean = false;
+  @Input() isSelected: boolean = false;
   @Output() play = new EventEmitter<void>();
+  @Output() dragStart = new EventEmitter<DragEvent>();
+  @Output() dragEnd = new EventEmitter<void>();
+  @Output() select = new EventEmitter<MouseEvent>();
   @Output() contextMenu = new EventEmitter<{ x: number; y: number; file: DriveFile }>();
 
   get fileSize(): string {
