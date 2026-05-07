@@ -209,8 +209,6 @@
   height: 72px;
   background: var(--header-bg);
   border-top: 1px solid var(--border);
-  // Simplify backdrop-filter or use a solid background for better performance
-  backdrop-filter: blur(10px);
   display: flex;
   align-items: center;
   padding: 0 20px;
