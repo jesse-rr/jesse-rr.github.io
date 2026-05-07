@@ -59,6 +59,8 @@ export class MusicPageComponent implements OnInit, OnDestroy {
   uploadProgress: number | null = null;
   selectedFiles: Set<string> = new Set();
   isDragging = false;
+  searchQuery = '';
+  sortOrder: 'asc' | 'desc' = 'asc';
 
   playingFile: DriveFile | null = null;
   audioBlobUrl: string | null = null;
@@ -76,11 +78,24 @@ export class MusicPageComponent implements OnInit, OnDestroy {
   private subscriptions: Subscription[] = [];
 
   get folders(): DriveFile[] {
-    return this.files.filter(f => f.mimeType === FOLDER_MIME);
+    return this.filterAndSort(this.files.filter(f => f.mimeType === FOLDER_MIME));
   }
 
   get audioFiles(): DriveFile[] {
-    return this.files.filter(f => f.mimeType !== FOLDER_MIME);
+    return this.filterAndSort(this.files.filter(f => f.mimeType !== FOLDER_MIME));
+  }
+
+  private filterAndSort(files: DriveFile[]): DriveFile[] {
+    let result = [...files];
+    if (this.searchQuery) {
+      const q = this.searchQuery.toLowerCase();
+      result = result.filter(f => f.name.toLowerCase().includes(q));
+    }
+    result.sort((a, b) => {
+      const cmp = a.name.localeCompare(b.name);
+      return this.sortOrder === 'asc' ? cmp : -cmp;
+    });
+    return result;
   }
 
   constructor(
@@ -263,6 +278,34 @@ export class MusicPageComponent implements OnInit, OnDestroy {
       await this.loadFolder(this.currentFolderId);
     } catch (err) {
       this.showToast('Failed to move some items');
+      console.error(err);
+    } finally {
+      this.loading = false;
+    }
+  }
+
+  onSearch(query: string) {
+    this.searchQuery = query;
+  }
+
+  onSortChange(order: 'asc' | 'desc') {
+    this.sortOrder = order;
+  }
+
+  async onDropOnBreadcrumb(item: BreadcrumbItem) {
+    if (!this.currentFolderId || this.selectedFiles.size === 0 || item.id === this.currentFolderId) return;
+
+    this.loading = true;
+    try {
+      const fileIds = Array.from(this.selectedFiles);
+      for (const id of fileIds) {
+        await this.driveService.move(id, item.id, this.currentFolderId);
+      }
+      this.showToast(`Moved ${fileIds.length} item(s) to ${item.name}`);
+      this.selectedFiles.clear();
+      await this.loadFolder(this.currentFolderId);
+    } catch (err) {
+      this.showToast('Failed to move items');
       console.error(err);
     } finally {
       this.loading = false;

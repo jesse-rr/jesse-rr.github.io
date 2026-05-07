@@ -209,13 +209,15 @@
   height: 72px;
   background: var(--header-bg);
   border-top: 1px solid var(--border);
-  backdrop-filter: blur(20px);
+  // Simplify backdrop-filter or use a solid background for better performance
+  backdrop-filter: blur(10px);
   display: flex;
   align-items: center;
   padding: 0 20px;
   gap: 14px;
   z-index: 200;
-  animation: slideUp 0.3s ease-out;
+  animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform;
 }
 
 @keyframes slideUp {

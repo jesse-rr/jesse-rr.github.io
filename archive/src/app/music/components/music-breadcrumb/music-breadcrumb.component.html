@@ -2,16 +2,21 @@
   <div class="breadcrumb-path">
     <span class="breadcrumb-prefix">Archive</span>
     <span class="breadcrumb-sep">/</span>
-    <ng-container *ngFor="let item of items; let last = last">
-      <button
-        class="breadcrumb-item"
+    <div 
+      *ngFor="let item of items; let last = last" 
+      class="breadcrumb-item-wrapper"
+      [class.drag-over]="dragOverItem === item.id"
+      (dragover)="onDragOver($event, item)"
+      (dragleave)="onDragLeave()"
+      (drop)="onDrop($event, item)">
+      <span 
+        class="breadcrumb-item" 
         [class.active]="last"
-        (click)="navigate.emit(item)"
-        [disabled]="last">
+        (click)="!last && navigate.emit(item)">
         {{ item.name }}
-      </button>
+      </span>
       <span class="breadcrumb-sep" *ngIf="!last">/</span>
-    </ng-container>
+    </div>
   </div>
   <button class="logout-btn" (click)="logout.emit()">
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">

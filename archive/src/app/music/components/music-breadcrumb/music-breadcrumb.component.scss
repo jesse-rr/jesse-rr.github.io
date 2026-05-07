@@ -59,6 +59,25 @@
   }
 }
 
+.breadcrumb-item-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px;
+  border-radius: 8px;
+  transition: all 0.2s;
+
+  &.drag-over {
+    background: var(--accent);
+    transform: scale(1.1);
+    
+    .breadcrumb-item, .breadcrumb-sep {
+      color: #fff !important;
+      opacity: 1;
+    }
+  }
+}
+
 .logout-btn {
   display: flex;
   align-items: center;

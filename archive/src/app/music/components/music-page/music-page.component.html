@@ -9,12 +9,15 @@
     <app-music-breadcrumb
       [items]="breadcrumb"
       (navigate)="navigateToBreadcrumb($event)"
+      (dropFiles)="onDropOnBreadcrumb($event)"
       (logout)="logout()">
     </app-music-breadcrumb>
 
     <app-music-toolbar
       (createFolder)="onCreateFolder()"
       (uploadFiles)="onUploadFiles($event)"
+      (search)="onSearch($event)"
+      (sortChange)="onSortChange($event)"
       (refresh)="refresh()">
     </app-music-toolbar>
 

@@ -71,6 +71,48 @@
   }
 }
 
+.toolbar-search {
+  flex: 1;
+  max-width: 400px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--btn-bg);
+  border: 1px solid var(--btn-border);
+  border-radius: 10px;
+  padding: 6px 14px;
+  transition: all 0.2s;
+
+  &:focus-within {
+    border-color: var(--accent);
+    background: var(--btn-hover);
+    box-shadow: 0 0 0 3px var(--accent-alpha);
+  }
+
+  svg {
+    color: var(--text-muted);
+  }
+
+  input {
+    background: none;
+    border: none;
+    color: var(--text);
+    font-size: 0.85rem;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    outline: none;
+    width: 100%;
+
+    &::placeholder {
+      color: var(--text-muted);
+    }
+  }
+}
+
+.toolbar-right {
+  display: flex;
+  gap: 8px;
+}
+
 .hidden-input {
   display: none;
 }

@@ -9,6 +9,7 @@
   padding: 10px 16px;
   transition: background 0.15s ease;
   cursor: default;
+  will-change: background;
 
   &:hover {
     background: var(--btn-hover);
