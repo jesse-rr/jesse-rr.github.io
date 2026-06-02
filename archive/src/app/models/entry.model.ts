@@ -6,7 +6,8 @@ export interface Entry {
   category: EntryCategory;
   tags?: string[];
   route?: string;
-  content?: EntryContent
+  content?: EntryContent;
+  modified?: Date;
 }
 
 export interface EntryContent {

@@ -25,6 +25,8 @@ export interface DriveListResponse {
 }
 
 export const FOLDER_MIME = 'application/vnd.google-apps.folder';
+export const TEXT_MIME = 'text/plain';
+export const MARKDOWN_MIME = 'text/markdown';
 
 export const AUDIO_MIMES = [
   'audio/mpeg',
@@ -41,6 +43,10 @@ export const AUDIO_MIMES = [
 
 export function isAudioFile(file: DriveFile): boolean {
   return AUDIO_MIMES.some(m => file.mimeType.startsWith(m.split('/')[0] + '/'));
+}
+
+export function isMarkdownFile(file: DriveFile): boolean {
+  return file.mimeType === MARKDOWN_MIME || file.name.endsWith('.md');
 }
 
 export function formatFileSize(bytes: string | undefined): string {

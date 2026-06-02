@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { GoogleAuthService } from './google-auth.service';
-import { DriveFile, DriveListResponse, FOLDER_MIME } from '../models/drive.model';
-import { MUSIC_ROOT_PATH } from '../config/google.config';
+import { DriveFile, DriveListResponse, FOLDER_MIME, MARKDOWN_MIME, TEXT_MIME } from '../models/drive.model';
+import {MUSIC_ROOT_PATH, NOTES_ROOT_PATH} from '../config/google.config';
 import { BehaviorSubject } from 'rxjs';
 
 const API_BASE = 'https://www.googleapis.com/drive/v3';
@@ -9,7 +9,7 @@ const UPLOAD_BASE = 'https://www.googleapis.com/upload/drive/v3';
 
 @Injectable({ providedIn: 'root' })
 export class DriveService {
-  private musicRootId: string | null = null;
+  private notesRootId: string | null = null;
   private rootResolving = false;
 
   private loadingSubject = new BehaviorSubject<boolean>(false);
@@ -23,23 +23,23 @@ export class DriveService {
     };
   }
 
-  async resolveMusicRoot(): Promise<string> {
-    if (this.musicRootId) return this.musicRootId;
+  async resolveNotesRoot(): Promise<string> {
+    if (this.notesRootId) return this.notesRootId;
     if (this.rootResolving) {
       while (this.rootResolving) {
         await new Promise(r => setTimeout(r, 100));
       }
-      if (this.musicRootId) return this.musicRootId;
+      if (this.notesRootId) return this.notesRootId;
     }
 
     this.rootResolving = true;
     try {
       let parentId = 'root';
 
-      for (const folderName of MUSIC_ROOT_PATH) {
+      for (const folderName of NOTES_ROOT_PATH) {
         const query = `name='${folderName}' and '${parentId}' in parents and mimeType='${FOLDER_MIME}' and trashed=false`;
         const res = await this.request<DriveListResponse>(
-          `${API_BASE}/files?q=${encodeURIComponent(query)}&fields=files(id,name)`
+            `${API_BASE}/files?q=${encodeURIComponent(query)}&fields=files(id,name)`
         );
 
         if (res.files.length === 0) {
@@ -50,7 +50,7 @@ export class DriveService {
         }
       }
 
-      this.musicRootId = parentId;
+      this.notesRootId = parentId;
       return parentId;
     } finally {
       this.rootResolving = false;
@@ -103,6 +103,61 @@ export class DriveService {
     });
   }
 
+  async createMarkdownFile(name: string, parentId: string, content: string): Promise<DriveFile> {
+    const metadata = {
+      name: name.endsWith('.md') ? name : name + '.md',
+      mimeType: MARKDOWN_MIME,
+      parents: [parentId],
+    };
+
+    return this.uploadTextContent(metadata, content);
+  }
+
+  async updateMarkdownFile(fileId: string, content: string): Promise<DriveFile> {
+    return this.request<DriveFile>(
+        `${UPLOAD_BASE}/files/${fileId}?uploadType=media`,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'text/markdown' },
+          body: content,
+        }
+    );
+  }
+
+  async getMarkdownContent(fileId: string): Promise<string> {
+    const res = await fetch(`${API_BASE}/files/${fileId}?alt=media`, {
+      headers: this.headers,
+    });
+    if (!res.ok) {
+      throw new Error(`Failed to get file content: ${res.status}`);
+    }
+    return res.text();
+  }
+
+  private async uploadTextContent(metadata: any, content: string): Promise<DriveFile> {
+    const boundary = '---archive-notes-boundary---';
+    const delimiter = '\r\n--' + boundary + '\r\n';
+    const closeDelimiter = '\r\n--' + boundary + '--';
+
+    const body =
+        delimiter +
+        'Content-Type: application/json; charset=UTF-8\r\n\r\n' +
+        JSON.stringify(metadata) +
+        delimiter +
+        'Content-Type: text/markdown\r\n\r\n' +
+        content +
+        closeDelimiter;
+
+    return this.request<DriveFile>(
+        `${UPLOAD_BASE}/files?uploadType=multipart&fields=id,name,mimeType,size,modifiedTime,parents`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': `multipart/related; boundary=${boundary}` },
+          body,
+        }
+    );
+  }
+
   async uploadFile(file: File, parentId: string, onProgress?: (pct: number) => void): Promise<DriveFile> {
     const metadata = {
       name: file.name,
@@ -131,38 +186,38 @@ export class DriveService {
     });
 
     const body =
-      delimiter +
-      'Content-Type: application/json; charset=UTF-8\r\n\r\n' +
-      JSON.stringify(metadata) +
-      delimiter +
-      'Content-Type: ' + file.type + '\r\n' +
-      'Content-Transfer-Encoding: base64\r\n\r\n' +
-      base64Data +
-      closeDelimiter;
+        delimiter +
+        'Content-Type: application/json; charset=UTF-8\r\n\r\n' +
+        JSON.stringify(metadata) +
+        delimiter +
+        'Content-Type: ' + file.type + '\r\n' +
+        'Content-Transfer-Encoding: base64\r\n\r\n' +
+        base64Data +
+        closeDelimiter;
 
     return this.request<DriveFile>(
-      `${UPLOAD_BASE}/files?uploadType=multipart&fields=id,name,mimeType,size,modifiedTime,parents`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': `multipart/related; boundary=${boundary}` },
-        body,
-      }
+        `${UPLOAD_BASE}/files?uploadType=multipart&fields=id,name,mimeType,size,modifiedTime,parents`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': `multipart/related; boundary=${boundary}` },
+          body,
+        }
     );
   }
 
   private async resumableUpload(file: File, metadata: any, onProgress?: (pct: number) => void): Promise<DriveFile> {
     const initRes = await fetch(
-      `${UPLOAD_BASE}/files?uploadType=resumable&fields=id,name,mimeType,size,modifiedTime,parents`,
-      {
-        method: 'POST',
-        headers: {
-          ...this.headers,
-          'Content-Type': 'application/json; charset=UTF-8',
-          'X-Upload-Content-Type': file.type,
-          'X-Upload-Content-Length': file.size.toString(),
-        },
-        body: JSON.stringify(metadata),
-      }
+        `${UPLOAD_BASE}/files?uploadType=resumable&fields=id,name,mimeType,size,modifiedTime,parents`,
+        {
+          method: 'POST',
+          headers: {
+            ...this.headers,
+            'Content-Type': 'application/json; charset=UTF-8',
+            'X-Upload-Content-Type': file.type,
+            'X-Upload-Content-Length': file.size.toString(),
+          },
+          body: JSON.stringify(metadata),
+        }
     );
 
     const uploadUri = initRes.headers.get('Location')!;
@@ -194,23 +249,23 @@ export class DriveService {
 
   async rename(fileId: string, newName: string): Promise<DriveFile> {
     return this.request<DriveFile>(
-      `${API_BASE}/files/${fileId}?fields=id,name,mimeType,size,modifiedTime,parents`,
-      {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: newName }),
-      }
+        `${API_BASE}/files/${fileId}?fields=id,name,mimeType,size,modifiedTime,parents`,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: newName }),
+        }
     );
   }
 
   async move(fileId: string, newParentId: string, oldParentId: string): Promise<DriveFile> {
     return this.request<DriveFile>(
-      `${API_BASE}/files/${fileId}?addParents=${newParentId}&removeParents=${oldParentId}&fields=id,name,mimeType,size,modifiedTime,parents`,
-      {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({}),
-      }
+        `${API_BASE}/files/${fileId}?addParents=${newParentId}&removeParents=${oldParentId}&fields=id,name,mimeType,size,modifiedTime,parents`,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({}),
+        }
     );
   }
 
@@ -222,7 +277,7 @@ export class DriveService {
 
   async getFile(fileId: string): Promise<DriveFile> {
     return this.request<DriveFile>(
-      `${API_BASE}/files/${fileId}?fields=id,name,mimeType,size,modifiedTime,parents,webContentLink`
+        `${API_BASE}/files/${fileId}?fields=id,name,mimeType,size,modifiedTime,parents,webContentLink`
     );
   }
 
@@ -231,10 +286,10 @@ export class DriveService {
   }
 
   async listAllFolders(folderId?: string): Promise<DriveFile[]> {
-    const rootId = folderId || await this.resolveMusicRoot();
+    const rootId = folderId || await this.resolveNotesRoot();
     const query = `'${rootId}' in parents and mimeType='${FOLDER_MIME}' and trashed=false`;
     const res = await this.request<DriveListResponse>(
-      `${API_BASE}/files?q=${encodeURIComponent(query)}&fields=files(id,name,mimeType,parents)&orderBy=name&pageSize=100`
+        `${API_BASE}/files?q=${encodeURIComponent(query)}&fields=files(id,name,mimeType,parents)&orderBy=name&pageSize=100`
     );
     return res.files;
   }
@@ -256,5 +311,29 @@ export class DriveService {
     if (res.status === 204) return undefined as T;
 
     return res.json();
+  }
+
+  async resolveMusicRoot(): Promise<string> {
+    return this.resolveRoot(MUSIC_ROOT_PATH);
+  }
+
+  private async resolveRoot(pathSegments: string[]): Promise<string> {
+    let parentId = 'root';
+
+    for (const folderName of pathSegments) {
+      const query = `name='${folderName}' and '${parentId}' in parents and mimeType='${FOLDER_MIME}' and trashed=false`;
+      const res = await this.request<DriveListResponse>(
+          `${API_BASE}/files?q=${encodeURIComponent(query)}&fields=files(id,name)`
+      );
+
+      if (res.files.length === 0) {
+        const created = await this.createFolderRaw(folderName, parentId);
+        parentId = created.id;
+      } else {
+        parentId = res.files[0].id;
+      }
+    }
+
+    return parentId;
   }
 }
