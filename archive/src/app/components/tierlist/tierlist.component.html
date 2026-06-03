@@ -1,0 +1,143 @@
+<!-- components/tierlist/tierlist.component.html -->
+<app-header></app-header>
+
+<div class="tierlist-container" *ngIf="authService.isAuthenticated; else loginTemplate">
+  <div class="tierlist-header">
+    <h1>{{ tierList?.name || 'Tier List' }}</h1>
+    <div class="header-actions">
+      <button class="action-btn" (click)="exportAsJSON()" title="Export">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        Export
+      </button>
+      <button class="action-btn" (click)="resetToDefault()" title="Reset">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M23 4v6h-6"/>
+          <path d="M1 20v-6h6"/>
+          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"/>
+          <path d="M20.49 15a9 9 0 0 1-14.85 3.36L1 14"/>
+        </svg>
+        Reset
+      </button>
+    </div>
+  </div>
+
+  <div class="add-tier-section">
+    <input type="text" class="tier-input" [(ngModel)]="newTierName" placeholder="New tier name..." (keyup.enter)="addTier()">
+    <button class="add-tier-btn" (click)="addTier()">Add Tier</button>
+  </div>
+
+  <div class="tiers-container">
+    <div *ngFor="let tier of tierList?.tiers; let tierIndex = index" class="tier-row" 
+         [class.drag-over]="dragOverTierId === tier.id"
+         (dragover)="onDragOver($event, tier.id)"
+         (drop)="onDrop($event, tier.id)">
+      
+      <div class="tier-label" [style.backgroundColor]="tier.color">
+        <div class="tier-label-content">
+          <div *ngIf="editingTierId !== tier.id" class="tier-name-display">
+            <span class="tier-name">{{ tier.name }}</span>
+            <div class="tier-actions">
+              <button class="icon-btn" (click)="moveTierUp(tierIndex)" [disabled]="tierIndex === 0" title="Move Up">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="18 15 12 9 6 15"/>
+                </svg>
+              </button>
+              <button class="icon-btn" (click)="moveTierDown(tierIndex)" [disabled]="tierIndex === (tierList?.tiers?.length || 0) - 1" title="Move Down">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="6 9 12 15 18 9"/>
+                </svg>
+              </button>
+              <button class="icon-btn" (click)="startEditTier(tier)" title="Edit">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M17 3l4 4-7 7H10v-4l7-7z"/>
+                  <path d="M4 20h16"/>
+                </svg>
+              </button>
+              <button class="icon-btn delete" (click)="deleteTier(tier.id)" title="Delete">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="3 6 5 6 21 6"/>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+          
+          <div *ngIf="editingTierId === tier.id" class="tier-name-edit">
+            <input type="text" [(ngModel)]="editingTierName" (keyup.enter)="saveTierEdit(tier)" (blur)="saveTierEdit(tier)" autofocus>
+          </div>
+          
+          <input type="color" class="color-picker" [(ngModel)]="tier.color" (change)="updateTierColor(tier, $event)">
+        </div>
+      </div>
+      
+      <div class="tier-items">
+        <div *ngFor="let item of tier.items; let itemIndex = index" class="tier-item" draggable="true"
+             (dragstart)="onDragStart(item)" (dragend)="onDragEnd()">
+          <div class="item-content">
+            <div class="item-image" *ngIf="item.imageUrl">
+              <img [src]="item.imageUrl" [alt]="item.text" (error)="item.imageUrl = undefined">
+            </div>
+            <div class="item-text" *ngIf="editingItemId !== item.id">
+              {{ item.text }}
+            </div>
+            <input type="text" class="item-edit-input" *ngIf="editingItemId === item.id" [(ngModel)]="editingItemText" 
+                   (keyup.enter)="saveItemEdit(item)" (blur)="saveItemEdit(item)" autofocus>
+          </div>
+          <div class="item-actions">
+            <button class="icon-btn small" (click)="moveItemUp(tier.id, itemIndex)" [disabled]="itemIndex === 0" title="Move Up">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="18 15 12 9 6 15"/>
+              </svg>
+            </button>
+            <button class="icon-btn small" (click)="moveItemDown(tier.id, itemIndex)" [disabled]="itemIndex === tier.items.length - 1" title="Move Down">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="6 9 12 15 18 9"/>
+              </svg>
+            </button>
+            <button class="icon-btn small" (click)="startEditItem(item)" title="Edit">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M17 3l4 4-7 7H10v-4l7-7z"/>
+              </svg>
+            </button>
+            <button class="icon-btn small delete" (click)="deleteItem(tier.id, item.id)" title="Delete">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18"/>
+                <line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+        
+        <div class="drag-here" *ngIf="dragOverTierId === tier.id && draggedItem">
+          Drop here
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="add-item-section">
+    <h3>Add New Item</h3>
+    <div class="add-item-form">
+      <input type="text" class="item-text-input" [(ngModel)]="newItemText" placeholder="Item name..." (keyup.enter)="addItem()">
+      
+      <div class="image-option">
+        <label class="checkbox-label">
+          <input type="checkbox" [(ngModel)]="showImageInput">
+          Add image URL
+        </label>
+      </div>
+      
+      <input type="text" class="item-image-input" *ngIf="showImageInput" [(ngModel)]="newItemImageUrl" placeholder="Image URL...">
+      
+      <button class="add-item-btn" (click)="addItem()" [disabled]="!newItemText.trim()">Add Item</button>
+    </div>
+  </div>
+</div>
+
+<ng-template #loginTemplate>
+  <app-drive-login></app-drive-login>
+</ng-template>

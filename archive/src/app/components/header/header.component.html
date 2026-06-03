@@ -1,3 +1,4 @@
+<!-- components/header/header.component.html - add tierlist link -->
 <header class="header">
   <span class="logo">
     <a routerLink="/">
@@ -7,6 +8,7 @@
   <nav class="nav-links">
     <a routerLink="/music" class="nav-link">Music</a>
     <a routerLink="/notes" class="nav-link">Notes</a>
+    <a routerLink="/tierlist" class="nav-link">Tier List</a>
   </nav>
   <div class="user-section" *ngIf="authService.isAuthenticated && (authService.user$ | async) as user">
     <img [src]="user.picture" alt="Avatar" class="avatar">
