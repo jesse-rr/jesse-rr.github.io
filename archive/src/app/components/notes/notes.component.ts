@@ -1,3 +1,4 @@
+// notes.component.ts - fix the marked configuration
 import { Component, OnInit, OnDestroy, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -28,6 +29,12 @@ export class NotesComponent implements OnInit, OnDestroy {
   sidebarVisible = true;
   editorVisible = true;
   previewVisible = true;
+  
+  modalVisible = false;
+  modalTitle = '';
+  modalInput = '';
+  modalType: 'note' | 'folder' = 'note';
+  
   private saveDebounce = new Subject<void>();
   private autoSaveInterval: any;
 
@@ -37,6 +44,11 @@ export class NotesComponent implements OnInit, OnDestroy {
   ) {
     this.saveDebounce.pipe(debounceTime(500)).subscribe(() => {
       this.saveCurrentNoteImmediate();
+    });
+    
+    marked.setOptions({
+      breaks: true,
+      gfm: true
     });
   }
 
@@ -158,10 +170,37 @@ export class NotesComponent implements OnInit, OnDestroy {
     }
   }
 
-  async createNewNote() {
-    const name = prompt('Enter note name:');
-    if (!name) return;
+  showCreateNoteModal() {
+    this.modalType = 'note';
+    this.modalTitle = 'Create New Note';
+    this.modalInput = '';
+    this.modalVisible = true;
+  }
 
+  showCreateFolderModal() {
+    this.modalType = 'folder';
+    this.modalTitle = 'Create New Folder';
+    this.modalInput = '';
+    this.modalVisible = true;
+  }
+
+  closeModal() {
+    this.modalVisible = false;
+    this.modalInput = '';
+  }
+
+  async confirmModal() {
+    if (!this.modalInput.trim()) return;
+    
+    if (this.modalType === 'note') {
+      await this.createNewNote(this.modalInput);
+    } else {
+      await this.createNewFolder(this.modalInput);
+    }
+    this.closeModal();
+  }
+
+  async createNewNote(name: string) {
     try {
       const newNote = await this.driveService.createMarkdownFile(name, this.currentNoteFolderId, `# ${name}\n\nStart writing here...`);
       await this.loadNoteFolderContents();
@@ -172,10 +211,7 @@ export class NotesComponent implements OnInit, OnDestroy {
     }
   }
 
-  async createNewFolder() {
-    const name = prompt('Enter folder name:');
-    if (!name) return;
-
+  async createNewFolder(name: string) {
     try {
       await this.driveService.createFolder(name, this.currentNoteFolderId);
       await this.loadNoteFolderContents();
@@ -192,8 +228,7 @@ export class NotesComponent implements OnInit, OnDestroy {
 
   private renderMarkdown() {
     try {
-      marked.setOptions({ breaks: true, gfm: true });
-      this.renderedMarkdown = marked(this.currentNoteContent) as string;
+      this.renderedMarkdown = marked.parse(this.currentNoteContent) as string;
     } catch (error) {
       this.renderedMarkdown = '<p>Error rendering markdown</p>';
     }
@@ -215,6 +250,24 @@ export class NotesComponent implements OnInit, OnDestroy {
       console.error('Failed to save note:', error);
     } finally {
       this.savingNote = false;
+    }
+  }
+
+  async deleteCurrentNote() {
+    if (!this.selectedNote) return;
+    const confirmed = confirm(`Delete "${this.selectedNote.name}"?`);
+    if (!confirmed) return;
+
+    try {
+      await this.driveService.delete(this.selectedNote.id);
+      this.selectedNote = null;
+      this.currentNoteTitle = '';
+      this.currentNoteContent = '';
+      this.renderedMarkdown = '';
+      await this.loadNoteFolderContents();
+    } catch (error) {
+      console.error('Failed to delete note:', error);
+      alert('Failed to delete note.');
     }
   }
 
