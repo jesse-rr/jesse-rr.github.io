@@ -7,10 +7,11 @@ import { DriveFile, FOLDER_MIME, isMarkdownFile } from '../../music/models/drive
 import { GoogleAuthService } from '../../music/services/google-auth.service';
 import { DriveService } from '../../music/services/drive.service';
 import { DriveLoginComponent } from '../../music/components/drive-login/drive-login.component';
+import { HeaderComponent } from '../header/header.component';
 
 @Component({
   selector: 'app-notes',
-  imports: [CommonModule, FormsModule, DriveLoginComponent],
+  imports: [CommonModule, FormsModule, DriveLoginComponent, HeaderComponent],
   templateUrl: './notes.component.html',
   styleUrl: './notes.component.scss'
 })
