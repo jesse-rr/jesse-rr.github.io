@@ -52,3 +52,30 @@
     }
 }
 
+.user-section {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+}
+
+.logout-btn {
+    background: var(--btn-bg);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 4px 12px;
+    font-size: 0.75rem;
+    cursor: pointer;
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+
+    &:hover {
+        background: var(--btn-hover);
+        border-color: var(--accent);
+    }
+}

@@ -1,12 +1,12 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { marked } from 'marked';
-import { Subject, debounceTime, switchMap } from 'rxjs';
-import {DriveLoginComponent} from "../../music/components/drive-login/drive-login.component";
-import {DriveFile, FOLDER_MIME, isMarkdownFile} from "../../music/models/drive.model";
-import {GoogleAuthService} from "../../music/services/google-auth.service";
-import {DriveService} from "../../music/services/drive.service";
+import { Subject, debounceTime } from 'rxjs';
+import { DriveFile, FOLDER_MIME, isMarkdownFile } from '../../music/models/drive.model';
+import { GoogleAuthService } from '../../music/services/google-auth.service';
+import { DriveService } from '../../music/services/drive.service';
+import { DriveLoginComponent } from '../../music/components/drive-login/drive-login.component';
 
 @Component({
   selector: 'app-notes',
@@ -16,22 +16,26 @@ import {DriveService} from "../../music/services/drive.service";
 })
 export class NotesComponent implements OnInit, OnDestroy {
   folderMime = FOLDER_MIME;
-  folderContents: DriveFile[] = [];
-  folderPath: DriveFile[] = [];
-  currentFolderId: string = '';
+  noteFolderContents: DriveFile[] = [];
+  noteFolderPath: DriveFile[] = [];
+  currentNoteFolderId: string = '';
   selectedNote: DriveFile | null = null;
   currentNoteTitle: string = '';
   currentNoteContent: string = '';
   renderedMarkdown: string = '';
-  saving = false;
+  savingNote = false;
+  sidebarVisible = true;
+  editorVisible = true;
+  previewVisible = true;
   private saveDebounce = new Subject<void>();
+  private autoSaveInterval: any;
 
   constructor(
-      public authService: GoogleAuthService,
-      private driveService: DriveService
+    public authService: GoogleAuthService,
+    private driveService: DriveService
   ) {
-    this.saveDebounce.pipe(debounceTime(1000)).subscribe(() => {
-      this.saveNoteImmediate();
+    this.saveDebounce.pipe(debounceTime(500)).subscribe(() => {
+      this.saveCurrentNoteImmediate();
     });
   }
 
@@ -39,34 +43,67 @@ export class NotesComponent implements OnInit, OnDestroy {
     if (this.authService.isAuthenticated) {
       await this.initNotesRoot();
     }
+    this.authService.accessToken$.subscribe(async (token) => {
+      if (token) {
+        await this.initNotesRoot();
+      }
+    });
+    this.autoSaveInterval = setInterval(() => {
+      if (this.selectedNote && this.currentNoteContent) {
+        this.saveCurrentNoteImmediate();
+      }
+    }, 10000);
   }
 
   ngOnDestroy() {
     this.saveDebounce.complete();
+    if (this.autoSaveInterval) {
+      clearInterval(this.autoSaveInterval);
+    }
+    if (this.selectedNote) {
+      this.saveCurrentNoteImmediate();
+    }
+  }
+
+  @HostListener('window:beforeunload')
+  onBeforeUnload() {
+    if (this.selectedNote) {
+      this.saveCurrentNoteImmediate();
+    }
   }
 
   private async initNotesRoot() {
     try {
-      this.currentFolderId = await this.driveService.resolveNotesRoot();
-      await this.loadNotes();
+      this.currentNoteFolderId = await this.driveService.resolveNotesRoot();
+      await this.loadNoteFolderContents();
     } catch (error) {
       console.error('Failed to init notes root:', error);
     }
   }
 
-  async loadNotes() {
-    if (!this.currentFolderId) return;
+  async refreshNotes() {
+    await this.loadNoteFolderContents();
+    if (this.selectedNote) {
+      const refreshed = this.noteFolderContents.find(n => n.id === this.selectedNote?.id);
+      if (refreshed) {
+        await this.openNote(refreshed);
+      }
+    }
+  }
+
+  async loadNoteFolderContents() {
+    if (!this.currentNoteFolderId) return;
     try {
-      this.folderContents = await this.driveService.listFolder(this.currentFolderId);
-      await this.loadFolderPath();
+      this.noteFolderContents = await this.driveService.listFolder(this.currentNoteFolderId);
+      await this.loadNoteFolderPath();
     } catch (error) {
       console.error('Failed to load notes:', error);
     }
   }
 
-  private async loadFolderPath() {
+  private async loadNoteFolderPath() {
     const path: DriveFile[] = [];
-    let currentId = this.currentFolderId;
+    let currentId = this.currentNoteFolderId;
     const rootId = await this.driveService.resolveNotesRoot();
 
     while (currentId && currentId !== rootId) {
@@ -81,14 +118,14 @@ export class NotesComponent implements OnInit, OnDestroy {
 
     const root = await this.driveService.getFile(rootId);
     path.unshift(root);
-    this.folderPath = path;
+    this.noteFolderPath = path;
   }
 
   async navigateToFolder(index: number) {
-    const targetFolder = this.folderPath[index];
-    if (targetFolder.id === this.currentFolderId) return;
-    this.currentFolderId = targetFolder.id;
-    await this.loadNotes();
+    const targetFolder = this.noteFolderPath[index];
+    if (targetFolder.id === this.currentNoteFolderId) return;
+    this.currentNoteFolderId = targetFolder.id;
+    await this.loadNoteFolderContents();
     this.selectedNote = null;
     this.currentNoteTitle = '';
     this.currentNoteContent = '';
@@ -97,16 +134,17 @@ export class NotesComponent implements OnInit, OnDestroy {
 
   async openNote(note: DriveFile) {
     if (note.mimeType === FOLDER_MIME) {
-      this.currentFolderId = note.id;
-      await this.loadNotes();
+      this.currentNoteFolderId = note.id;
+      await this.loadNoteFolderContents();
       this.selectedNote = null;
-      this.currentNoteTitle = '';
-      this.currentNoteContent = '';
-      this.renderedMarkdown = '';
       return;
     }
 
     if (!isMarkdownFile(note)) return;
+
+    if (this.selectedNote && this.selectedNote.id !== note.id) {
+      await this.saveCurrentNoteImmediate();
+    }
 
     this.selectedNote = note;
     this.currentNoteTitle = note.name.replace(/\.md$/, '');
@@ -114,7 +152,6 @@ export class NotesComponent implements OnInit, OnDestroy {
       this.currentNoteContent = await this.driveService.getMarkdownContent(note.id);
       this.renderMarkdown();
     } catch (error) {
-      console.error('Failed to load note content:', error);
       this.currentNoteContent = '# Error loading note\n\nCould not load the content.';
       this.renderMarkdown();
     }
@@ -125,11 +162,12 @@ export class NotesComponent implements OnInit, OnDestroy {
     if (!name) return;
 
     try {
-      const newNote = await this.driveService.createMarkdownFile(name, this.currentFolderId, `# ${name}\n\nStart writing here...`);
-      await this.loadNotes();
+      const newNote = await this.driveService.createMarkdownFile(name, this.currentNoteFolderId, `# ${name}\n\nStart writing here...`);
+      await this.loadNoteFolderContents();
       await this.openNote(newNote);
     } catch (error) {
       console.error('Failed to create note:', error);
+      alert('Failed to create note. Please make sure you are logged in.');
     }
   }
 
@@ -138,10 +176,11 @@ export class NotesComponent implements OnInit, OnDestroy {
     if (!name) return;
 
     try {
-      await this.driveService.createFolder(name, this.currentFolderId);
-      await this.loadNotes();
+      await this.driveService.createFolder(name, this.currentNoteFolderId);
+      await this.loadNoteFolderContents();
     } catch (error) {
       console.error('Failed to create folder:', error);
+      alert('Failed to create folder. Please make sure you are logged in.');
     }
   }
 
@@ -152,49 +191,42 @@ export class NotesComponent implements OnInit, OnDestroy {
 
   private renderMarkdown() {
     try {
+      marked.setOptions({ breaks: true, gfm: true });
       this.renderedMarkdown = marked(this.currentNoteContent) as string;
     } catch (error) {
       this.renderedMarkdown = '<p>Error rendering markdown</p>';
     }
   }
 
-  saveNote() {
-    this.saveDebounce.next();
-  }
+  private async saveCurrentNoteImmediate() {
+    if (!this.selectedNote || this.savingNote) return;
 
-  private async saveNoteImmediate() {
-    if (!this.selectedNote || this.saving) return;
-
-    this.saving = true;
+    this.savingNote = true;
     try {
       const titleWithExt = this.currentNoteTitle.endsWith('.md') ? this.currentNoteTitle : this.currentNoteTitle + '.md';
       if (titleWithExt !== this.selectedNote.name) {
         await this.driveService.rename(this.selectedNote.id, titleWithExt);
         this.selectedNote.name = titleWithExt;
+        await this.loadNoteFolderContents();
       }
       await this.driveService.updateMarkdownFile(this.selectedNote.id, this.currentNoteContent);
     } catch (error) {
       console.error('Failed to save note:', error);
     } finally {
-      this.saving = false;
+      this.savingNote = false;
     }
   }
 
-  async deleteCurrentNote() {
-    if (!this.selectedNote) return;
-    const confirmed = confirm(`Delete "${this.selectedNote.name}"?`);
-    if (!confirmed) return;
+  toggleSidebar() {
+    this.sidebarVisible = !this.sidebarVisible;
+  }
 
-    try {
-      await this.driveService.delete(this.selectedNote.id);
-      this.selectedNote = null;
-      this.currentNoteTitle = '';
-      this.currentNoteContent = '';
-      this.renderedMarkdown = '';
-      await this.loadNotes();
-    } catch (error) {
-      console.error('Failed to delete note:', error);
-    }
+  toggleEditor() {
+    this.editorVisible = !this.editorVisible;
+  }
+
+  togglePreview() {
+    this.previewVisible = !this.previewVisible;
   }
 
   toggleTheme() {

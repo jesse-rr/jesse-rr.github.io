@@ -6,7 +6,11 @@
   </span>
   <nav class="nav-links">
     <a routerLink="/music" class="nav-link">Music</a>
+    <a routerLink="/notes" class="nav-link">Notes</a>
   </nav>
+  <div class="user-section" *ngIf="authService.isAuthenticated && (authService.user$ | async) as user">
+    <img [src]="user.picture" alt="Avatar" class="avatar">
+    <button class="logout-btn" (click)="logout()">Sign out</button>
+  </div>
   <app-theme-button></app-theme-button>
 </header>
-
