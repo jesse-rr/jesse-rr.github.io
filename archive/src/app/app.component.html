@@ -1,1 +1,24 @@
-<router-outlet></router-outlet>
+<ng-container *ngIf="authService.isAuthenticating$ | async; else authCheck">
+  <div class="global-loader-container">
+    <div class="loader-content">
+      <div class="logo-spinner-wrap">
+        <svg class="logo-icon" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+        </svg>
+        <div class="ring-loader"></div>
+      </div>
+      <h1 class="loader-title">ARCHIVE</h1>
+      <p class="loader-subtitle">Securing your session...</p>
+    </div>
+  </div>
+</ng-container>
+
+<ng-template #authCheck>
+  <ng-container *ngIf="!(authService.accessToken$ | async); else appContent">
+    <app-drive-login></app-drive-login>
+  </ng-container>
+</ng-template>
+
+<ng-template #appContent>
+  <router-outlet></router-outlet>
+</ng-template>

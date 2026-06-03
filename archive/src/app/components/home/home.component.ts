@@ -10,7 +10,8 @@ import { Subject, debounceTime } from 'rxjs';
 import { DriveFile, FOLDER_MIME, isMarkdownFile } from "../../music/models/drive.model";
 import { GoogleAuthService } from "../../music/services/google-auth.service";
 import { DriveService } from "../../music/services/drive.service";
-import { Entry } from '../../models/entry.model'
+import { Entry } from '../../models/entry.model';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-home',
@@ -39,7 +40,8 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   constructor(
       public authService: GoogleAuthService,
-      private driveService: DriveService
+      private driveService: DriveService,
+      private router: Router
   ) {
     this.saveDebounce.pipe(debounceTime(1000)).subscribe(() => {
       this.saveCurrentNoteImmediate();
@@ -97,6 +99,10 @@ export class HomeComponent implements OnInit, OnDestroy {
   }
 
   selectCategory(cat: string) {
+    if (cat === 'Notes') {
+      this.router.navigate(['/notes']);
+      return;
+    }
     this.selectedCategory = cat;
     this.selectedTag = '';
     this.searchQuery = '';

@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { GoogleAuthService } from './google-auth.service';
 import { DriveFile, DriveListResponse, FOLDER_MIME, MARKDOWN_MIME, TEXT_MIME } from '../models/drive.model';
-import {MUSIC_ROOT_PATH, NOTES_ROOT_PATH} from '../config/google.config';
+import {MUSIC_ROOT_PATH, NOTES_ROOT_PATH, TIERLISTS_ROOT_PATH} from '../config/google.config';
 import { BehaviorSubject } from 'rxjs';
 
 const API_BASE = 'https://www.googleapis.com/drive/v3';
@@ -11,6 +11,8 @@ const UPLOAD_BASE = 'https://www.googleapis.com/upload/drive/v3';
 export class DriveService {
   private notesRootId: string | null = null;
   private rootResolving = false;
+  private tierListsRootId: string | null = null;
+  private tierListsRootResolving = false;
 
   private loadingSubject = new BehaviorSubject<boolean>(false);
   loading$ = this.loadingSubject.asObservable();
@@ -315,6 +317,24 @@ export class DriveService {
 
   async resolveMusicRoot(): Promise<string> {
     return this.resolveRoot(MUSIC_ROOT_PATH);
+  }
+
+  async resolveTierListsRoot(): Promise<string> {
+    if (this.tierListsRootId) return this.tierListsRootId;
+    if (this.tierListsRootResolving) {
+      while (this.tierListsRootResolving) {
+        await new Promise(r => setTimeout(r, 100));
+      }
+      if (this.tierListsRootId) return this.tierListsRootId;
+    }
+
+    this.tierListsRootResolving = true;
+    try {
+      this.tierListsRootId = await this.resolveRoot(TIERLISTS_ROOT_PATH);
+      return this.tierListsRootId;
+    } finally {
+      this.tierListsRootResolving = false;
+    }
   }
 
   private async resolveRoot(pathSegments: string[]): Promise<string> {

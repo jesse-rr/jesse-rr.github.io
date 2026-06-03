@@ -1,5 +1,4 @@
-// components/tierlist/tierlist.component.ts
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { GoogleAuthService } from '../../music/services/google-auth.service';
@@ -7,6 +6,7 @@ import { DriveService } from '../../music/services/drive.service';
 import { HeaderComponent } from '../header/header.component';
 import { DriveLoginComponent } from '../../music/components/drive-login/drive-login.component';
 import { Tier, TierItem, TierList } from '../../models/tier.model';
+import { DriveFile } from '../../music/models/drive.model';
 import { v4 as uuidv4 } from 'uuid';
 
 @Component({
@@ -28,8 +28,31 @@ export class TierlistComponent implements OnInit, OnDestroy {
   editingItemText: string = '';
   draggedItem: TierItem | null = null;
   dragOverTierId: string | null = null;
-  autoSaveInterval: any;
   saving: boolean = false;
+
+  // Multi list & manual save properties
+  tierLists: DriveFile[] = [];
+  hasUnsavedChanges: boolean = false;
+
+  // Custom modal states
+  showCreateModal: boolean = false;
+  newListName: string = '';
+
+  showRenameModal: boolean = false;
+  renameListName: string = '';
+  listToRename: DriveFile | null = null;
+
+  showDeleteModal: boolean = false;
+  listToDelete: DriveFile | null = null;
+
+  showResetModal: boolean = false;
+
+  showDeleteTierModal: boolean = false;
+  tierIdToDelete: string = '';
+
+  showUnsavedModal: boolean = false;
+  pendingListToSelect: DriveFile | null = null;
+  pendingCreateAction: boolean = false;
 
   defaultTiers: Tier[] = [
     { id: uuidv4(), name: 'S', color: '#ff7f7f', items: [] },
@@ -44,60 +67,92 @@ export class TierlistComponent implements OnInit, OnDestroy {
     private driveService: DriveService
   ) {}
 
+  @HostListener('window:beforeunload', ['$event'])
+  onBeforeUnload(event: BeforeUnloadEvent) {
+    if (this.hasUnsavedChanges) {
+      event.preventDefault();
+      event.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
+      return event.returnValue;
+    }
+    return true;
+  }
+
   async ngOnInit() {
     if (this.authService.isAuthenticated) {
-      await this.loadTierList();
+      await this.initModule();
     }
     this.authService.accessToken$.subscribe(async (token) => {
       if (token) {
-        await this.loadTierList();
+        await this.initModule();
       }
     });
-    this.autoSaveInterval = setInterval(() => {
-      if (this.tierList && this.authService.isAuthenticated) {
-        this.saveTierList();
-      }
-    }, 5000);
   }
 
   ngOnDestroy() {
-    if (this.autoSaveInterval) {
-      clearInterval(this.autoSaveInterval);
-    }
-    if (this.tierList && this.authService.isAuthenticated) {
+    if (this.hasUnsavedChanges && this.tierList && this.authService.isAuthenticated) {
+      // Attempt background save on component teardown
       this.saveTierList();
     }
   }
 
-  async loadTierList() {
-    try {
-      const rootId = await this.driveService.resolveNotesRoot();
-      const files = await this.driveService.listFolder(rootId);
-      const tierFile = files.find(f => f.name === 'tierlist.json');
-      
-      if (tierFile) {
-        const content = await this.driveService.getMarkdownContent(tierFile.id);
-        const savedData = JSON.parse(content);
-        this.tierList = savedData;
-        this.currentTierListId = tierFile.id;
-      } else {
-        this.createNewTierList();
-      }
-    } catch (error) {
-      console.error('Failed to load tier list:', error);
-      this.createNewTierList();
+  async initModule() {
+    await this.loadAllTierLists();
+    if (this.tierLists.length > 0) {
+      await this.selectTierList(this.tierLists[0]);
+    } else {
+      await this.createNewTierList('My Tier List');
     }
   }
 
-  createNewTierList() {
-    this.tierList = {
+  async loadAllTierLists() {
+    try {
+      const folderId = await this.driveService.resolveTierListsRoot();
+      const files = await this.driveService.listFolder(folderId);
+      this.tierLists = files.filter(f => f.name.endsWith('.json'));
+    } catch (error) {
+      console.error('Failed to list tier lists:', error);
+    }
+  }
+
+  async selectTierList(file: DriveFile) {
+    if (file.id === this.currentTierListId) return;
+
+    if (this.hasUnsavedChanges) {
+      this.pendingListToSelect = file;
+      this.pendingCreateAction = false;
+      this.showUnsavedModal = true;
+      return;
+    }
+
+    try {
+      const content = await this.driveService.getMarkdownContent(file.id);
+      this.tierList = JSON.parse(content);
+      this.currentTierListId = file.id;
+      this.hasUnsavedChanges = false;
+    } catch (error) {
+      console.error('Failed to load selected tier list:', error);
+    }
+  }
+
+  async createNewTierList(name: string) {
+    const list: TierList = {
       id: uuidv4(),
-      name: 'My Tier List',
+      name: name,
       tiers: JSON.parse(JSON.stringify(this.defaultTiers)),
       createdAt: new Date(),
       updatedAt: new Date()
     };
-    this.saveTierList();
+    this.tierList = list;
+    this.currentTierListId = '';
+    
+    await this.saveTierListImmediate(list);
+    await this.loadAllTierLists();
+
+    const found = this.tierLists.find(f => f.name === `${name}.json`);
+    if (found) {
+      this.currentTierListId = found.id;
+    }
+    this.hasUnsavedChanges = false;
   }
 
   async saveTierList() {
@@ -108,14 +163,17 @@ export class TierlistComponent implements OnInit, OnDestroy {
     
     try {
       const content = JSON.stringify(this.tierList, null, 2);
-      const rootId = await this.driveService.resolveNotesRoot();
+      const rootId = await this.driveService.resolveTierListsRoot();
+      const fileName = `${this.tierList.name}.json`;
       
       if (this.currentTierListId) {
         await this.driveService.updateMarkdownFile(this.currentTierListId, content);
       } else {
-        const newFile = await this.driveService.createMarkdownFile('tierlist.json', rootId, content);
+        const newFile = await this.driveService.createMarkdownFile(fileName, rootId, content);
         this.currentTierListId = newFile.id;
       }
+      this.hasUnsavedChanges = false;
+      await this.loadAllTierLists();
     } catch (error) {
       console.error('Failed to save tier list:', error);
     } finally {
@@ -123,6 +181,155 @@ export class TierlistComponent implements OnInit, OnDestroy {
     }
   }
 
+  private async saveTierListImmediate(list: TierList) {
+    this.saving = true;
+    try {
+      const content = JSON.stringify(list, null, 2);
+      const rootId = await this.driveService.resolveTierListsRoot();
+      const fileName = `${list.name}.json`;
+      const newFile = await this.driveService.createMarkdownFile(fileName, rootId, content);
+      this.currentTierListId = newFile.id;
+    } catch (error) {
+      console.error('Failed to save default tier list:', error);
+    } finally {
+      this.saving = false;
+    }
+  }
+
+  // Modals management
+  openCreateModal() {
+    if (this.hasUnsavedChanges) {
+      this.pendingListToSelect = null;
+      this.pendingCreateAction = true;
+      this.showUnsavedModal = true;
+      return;
+    }
+    this.newListName = '';
+    this.showCreateModal = true;
+  }
+
+  confirmCreate() {
+    if (!this.newListName.trim()) return;
+    this.createNewTierList(this.newListName.trim());
+    this.showCreateModal = false;
+  }
+
+  openRenameModal(file: DriveFile) {
+    this.listToRename = file;
+    this.renameListName = file.name.replace('.json', '');
+    this.showRenameModal = true;
+  }
+
+  async renameTierList() {
+    if (!this.renameListName.trim() || !this.listToRename) return;
+    try {
+      const newFileName = `${this.renameListName.trim()}.json`;
+      await this.driveService.rename(this.listToRename.id, newFileName);
+      
+      if (this.currentTierListId === this.listToRename.id && this.tierList) {
+        this.tierList.name = this.renameListName.trim();
+      }
+      
+      this.showRenameModal = false;
+      this.listToRename = null;
+      await this.loadAllTierLists();
+    } catch (error) {
+      console.error('Failed to rename tier list:', error);
+    }
+  }
+
+  openDeleteConfirmModal(file: DriveFile) {
+    this.listToDelete = file;
+    this.showDeleteModal = true;
+  }
+
+  async deleteTierList() {
+    if (!this.listToDelete) return;
+    try {
+      await this.driveService.delete(this.listToDelete.id);
+      
+      if (this.currentTierListId === this.listToDelete.id) {
+        this.tierList = null;
+        this.currentTierListId = '';
+        this.hasUnsavedChanges = false;
+      }
+      
+      this.showDeleteModal = false;
+      this.listToDelete = null;
+      await this.loadAllTierLists();
+
+      if (!this.currentTierListId) {
+        if (this.tierLists.length > 0) {
+          await this.selectTierList(this.tierLists[0]);
+        } else {
+          await this.createNewTierList('My Tier List');
+        }
+      }
+    } catch (error) {
+      console.error('Failed to delete tier list:', error);
+    }
+  }
+
+  openResetModal() {
+    this.showResetModal = true;
+  }
+
+  confirmReset() {
+    if (this.tierList) {
+      this.tierList.tiers = JSON.parse(JSON.stringify(this.defaultTiers));
+      this.hasUnsavedChanges = true;
+    }
+    this.showResetModal = false;
+  }
+
+  openDeleteTierModal(tierId: string) {
+    this.tierIdToDelete = tierId;
+    this.showDeleteTierModal = true;
+  }
+
+  confirmDeleteTier() {
+    if (!this.tierList || !this.tierIdToDelete) return;
+    this.tierList.tiers = this.tierList.tiers.filter(t => t.id !== this.tierIdToDelete);
+    this.hasUnsavedChanges = true;
+    this.showDeleteTierModal = false;
+    this.tierIdToDelete = '';
+  }
+
+  async handleUnsavedSave() {
+    await this.saveTierList();
+    this.showUnsavedModal = false;
+    
+    if (this.pendingListToSelect) {
+      const file = this.pendingListToSelect;
+      this.pendingListToSelect = null;
+      await this.selectTierList(file);
+    } else if (this.pendingCreateAction) {
+      this.pendingCreateAction = false;
+      this.openCreateModal();
+    }
+  }
+
+  async handleUnsavedDiscard() {
+    this.hasUnsavedChanges = false;
+    this.showUnsavedModal = false;
+
+    if (this.pendingListToSelect) {
+      const file = this.pendingListToSelect;
+      this.pendingListToSelect = null;
+      await this.selectTierList(file);
+    } else if (this.pendingCreateAction) {
+      this.pendingCreateAction = false;
+      this.openCreateModal();
+    }
+  }
+
+  handleUnsavedCancel() {
+    this.showUnsavedModal = false;
+    this.pendingListToSelect = null;
+    this.pendingCreateAction = false;
+  }
+
+  // Mutator actions
   addTier() {
     if (!this.newTierName.trim()) return;
     
@@ -133,13 +340,7 @@ export class TierlistComponent implements OnInit, OnDestroy {
       items: []
     });
     this.newTierName = '';
-    this.saveTierList();
-  }
-
-  deleteTier(tierId: string) {
-    if (!this.tierList) return;
-    this.tierList.tiers = this.tierList.tiers.filter(t => t.id !== tierId);
-    this.saveTierList();
+    this.hasUnsavedChanges = true;
   }
 
   startEditTier(tier: Tier) {
@@ -148,12 +349,12 @@ export class TierlistComponent implements OnInit, OnDestroy {
   }
 
   saveTierEdit(tier: Tier) {
-    if (this.editingTierName.trim()) {
+    if (this.editingTierName.trim() && tier.name !== this.editingTierName) {
       tier.name = this.editingTierName;
+      this.hasUnsavedChanges = true;
     }
     this.editingTierId = null;
     this.editingTierName = '';
-    this.saveTierList();
   }
 
   cancelTierEdit() {
@@ -163,8 +364,10 @@ export class TierlistComponent implements OnInit, OnDestroy {
 
   updateTierColor(tier: Tier, event: Event) {
     const input = event.target as HTMLInputElement;
-    tier.color = input.value;
-    this.saveTierList();
+    if (tier.color !== input.value) {
+      tier.color = input.value;
+      this.hasUnsavedChanges = true;
+    }
   }
 
   addItem() {
@@ -183,14 +386,14 @@ export class TierlistComponent implements OnInit, OnDestroy {
     this.newItemText = '';
     this.newItemImageUrl = '';
     this.showImageInput = false;
-    this.saveTierList();
+    this.hasUnsavedChanges = true;
   }
 
   deleteItem(tierId: string, itemId: string) {
     const tier = this.tierList?.tiers.find(t => t.id === tierId);
     if (tier) {
       tier.items = tier.items.filter(i => i.id !== itemId);
-      this.saveTierList();
+      this.hasUnsavedChanges = true;
     }
   }
 
@@ -200,12 +403,12 @@ export class TierlistComponent implements OnInit, OnDestroy {
   }
 
   saveItemEdit(item: TierItem) {
-    if (this.editingItemText.trim()) {
+    if (this.editingItemText.trim() && item.text !== this.editingItemText) {
       item.text = this.editingItemText;
+      this.hasUnsavedChanges = true;
     }
     this.editingItemId = null;
     this.editingItemText = '';
-    this.saveTierList();
   }
 
   cancelItemEdit() {
@@ -229,13 +432,13 @@ export class TierlistComponent implements OnInit, OnDestroy {
     const sourceTier = this.tierList.tiers.find(t => t.id === this.draggedItem!.tierId);
     const targetTier = this.tierList.tiers.find(t => t.id === targetTierId);
     
-    if (sourceTier && targetTier) {
+    if (sourceTier && targetTier && sourceTier.id !== targetTier.id) {
       const itemIndex = sourceTier.items.findIndex(i => i.id === this.draggedItem!.id);
       if (itemIndex !== -1) {
         const [movedItem] = sourceTier.items.splice(itemIndex, 1);
         movedItem.tierId = targetTierId;
         targetTier.items.push(movedItem);
-        this.saveTierList();
+        this.hasUnsavedChanges = true;
       }
     }
     
@@ -252,7 +455,7 @@ export class TierlistComponent implements OnInit, OnDestroy {
     const tier = this.tierList?.tiers.find(t => t.id === tierId);
     if (tier && itemIndex > 0) {
       [tier.items[itemIndex], tier.items[itemIndex - 1]] = [tier.items[itemIndex - 1], tier.items[itemIndex]];
-      this.saveTierList();
+      this.hasUnsavedChanges = true;
     }
   }
 
@@ -260,20 +463,20 @@ export class TierlistComponent implements OnInit, OnDestroy {
     const tier = this.tierList?.tiers.find(t => t.id === tierId);
     if (tier && itemIndex < tier.items.length - 1) {
       [tier.items[itemIndex], tier.items[itemIndex + 1]] = [tier.items[itemIndex + 1], tier.items[itemIndex]];
-      this.saveTierList();
+      this.hasUnsavedChanges = true;
     }
   }
 
   moveTierUp(index: number) {
     if (!this.tierList || index === 0) return;
     [this.tierList.tiers[index], this.tierList.tiers[index - 1]] = [this.tierList.tiers[index - 1], this.tierList.tiers[index]];
-    this.saveTierList();
+    this.hasUnsavedChanges = true;
   }
 
   moveTierDown(index: number) {
     if (!this.tierList || index === this.tierList.tiers.length - 1) return;
     [this.tierList.tiers[index], this.tierList.tiers[index + 1]] = [this.tierList.tiers[index + 1], this.tierList.tiers[index]];
-    this.saveTierList();
+    this.hasUnsavedChanges = true;
   }
 
   exportAsJSON() {
@@ -286,12 +489,5 @@ export class TierlistComponent implements OnInit, OnDestroy {
     a.download = `${this.tierList.name}.json`;
     a.click();
     URL.revokeObjectURL(url);
-  }
-
-  resetToDefault() {
-    if (confirm('Reset all tiers and items to default?')) {
-      this.tierList!.tiers = JSON.parse(JSON.stringify(this.defaultTiers));
-      this.saveTierList();
-    }
   }
 }

@@ -4,3 +4,4 @@ export const DRIVE_SCOPES = 'https://www.googleapis.com/auth/drive';
 
 export const MUSIC_ROOT_PATH = ['Archive', 'Music'];
 export const NOTES_ROOT_PATH = ['Archive', 'Notes'];
+export const TIERLISTS_ROOT_PATH = ['Archive', 'TierLists'];

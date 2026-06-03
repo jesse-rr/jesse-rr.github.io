@@ -112,11 +112,29 @@
       <button class="modal-close" (click)="closeModal()">&times;</button>
     </div>
     <div class="modal-body">
-      <input type="text" class="modal-input" [(ngModel)]="modalInput" placeholder="Enter name..." (keyup.enter)="confirmModal()" autofocus>
+      <!-- Input for notes/folders creation -->
+      <input *ngIf="modalType === 'note' || modalType === 'folder'" type="text" class="modal-input" [(ngModel)]="modalInput" placeholder="Enter name..." (keyup.enter)="confirmModal()" autofocus>
+      
+      <!-- Confirmation text for delete -->
+      <p *ngIf="modalType === 'delete'">Are you sure you want to delete this note? This action cannot be undone.</p>
+      
+      <!-- Message for error modal -->
+      <p *ngIf="modalType === 'error'">{{ modalInput }}</p>
     </div>
     <div class="modal-footer">
-      <button class="modal-btn cancel" (click)="closeModal()">Cancel</button>
-      <button class="modal-btn confirm" (click)="confirmModal()">Create</button>
+      <ng-container *ngIf="modalType === 'note' || modalType === 'folder'">
+        <button class="modal-btn cancel" (click)="closeModal()">Cancel</button>
+        <button class="modal-btn confirm" (click)="confirmModal()">Create</button>
+      </ng-container>
+      
+      <ng-container *ngIf="modalType === 'delete'">
+        <button class="modal-btn cancel" (click)="closeModal()">Cancel</button>
+        <button class="modal-btn confirm" style="background-color: #ff453a;" (click)="confirmModal()">Delete</button>
+      </ng-container>
+      
+      <ng-container *ngIf="modalType === 'error'">
+        <button class="modal-btn cancel" (click)="closeModal()">Close</button>
+      </ng-container>
     </div>
   </div>
 </div>

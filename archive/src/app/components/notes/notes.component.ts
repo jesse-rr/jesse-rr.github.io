@@ -33,7 +33,7 @@ export class NotesComponent implements OnInit, OnDestroy {
   modalVisible = false;
   modalTitle = '';
   modalInput = '';
-  modalType: 'note' | 'folder' = 'note';
+  modalType: 'note' | 'folder' | 'delete' | 'error' = 'note';
   
   private saveDebounce = new Subject<void>();
   private autoSaveInterval: any;
@@ -190,14 +190,20 @@ export class NotesComponent implements OnInit, OnDestroy {
   }
 
   async confirmModal() {
-    if (!this.modalInput.trim()) return;
-    
     if (this.modalType === 'note') {
+      if (!this.modalInput.trim()) return;
       await this.createNewNote(this.modalInput);
-    } else {
+      this.closeModal();
+    } else if (this.modalType === 'folder') {
+      if (!this.modalInput.trim()) return;
       await this.createNewFolder(this.modalInput);
+      this.closeModal();
+    } else if (this.modalType === 'delete') {
+      await this.confirmDeleteNote();
+      this.closeModal();
+    } else {
+      this.closeModal();
     }
-    this.closeModal();
   }
 
   async createNewNote(name: string) {
@@ -207,7 +213,7 @@ export class NotesComponent implements OnInit, OnDestroy {
       await this.openNote(newNote);
     } catch (error) {
       console.error('Failed to create note:', error);
-      alert('Failed to create note. Please make sure you are logged in.');
+      this.showErrorModal('Failed to create note. Please make sure you are logged in.');
     }
   }
 
@@ -217,7 +223,7 @@ export class NotesComponent implements OnInit, OnDestroy {
       await this.loadNoteFolderContents();
     } catch (error) {
       console.error('Failed to create folder:', error);
-      alert('Failed to create folder. Please make sure you are logged in.');
+      this.showErrorModal('Failed to create folder. Please make sure you are logged in.');
     }
   }
 
@@ -253,11 +259,16 @@ export class NotesComponent implements OnInit, OnDestroy {
     }
   }
 
-  async deleteCurrentNote() {
+  deleteCurrentNote() {
     if (!this.selectedNote) return;
-    const confirmed = confirm(`Delete "${this.selectedNote.name}"?`);
-    if (!confirmed) return;
+    this.modalType = 'delete';
+    this.modalTitle = 'Delete Note';
+    this.modalInput = '';
+    this.modalVisible = true;
+  }
 
+  async confirmDeleteNote() {
+    if (!this.selectedNote) return;
     try {
       await this.driveService.delete(this.selectedNote.id);
       this.selectedNote = null;
@@ -267,8 +278,15 @@ export class NotesComponent implements OnInit, OnDestroy {
       await this.loadNoteFolderContents();
     } catch (error) {
       console.error('Failed to delete note:', error);
-      alert('Failed to delete note.');
+      this.showErrorModal('Failed to delete note.');
     }
+  }
+
+  showErrorModal(message: string) {
+    this.modalType = 'error';
+    this.modalTitle = 'Error';
+    this.modalInput = message;
+    this.modalVisible = true;
   }
 
   toggleSidebar() {

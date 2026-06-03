@@ -29,7 +29,7 @@
   // Remove the secondary hover that was changing backgrounds
 
   &.drag-over {
-    transform: scale(1.05) translateY(-8px);
+    transform: scale(1.05);
 
     .folder-body,
     .folder-tab {
