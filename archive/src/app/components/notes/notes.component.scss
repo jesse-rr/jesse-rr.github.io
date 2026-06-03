@@ -1,11 +1,7 @@
 .notes-app {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
   display: flex;
   flex-direction: column;
+  height: calc(100vh - 60px);
   background: var(--bg);
 }
 
@@ -17,7 +13,7 @@
   background: var(--header-bg);
   border-bottom: 1px solid var(--border);
   backdrop-filter: blur(10px);
-  z-index: 10;
+  flex-shrink: 0;
 }
 
 .toggle-btn, .action-btn {

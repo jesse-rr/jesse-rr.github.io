@@ -6,8 +6,8 @@ import { Subject, debounceTime } from 'rxjs';
 import { DriveFile, FOLDER_MIME, isMarkdownFile } from '../../music/models/drive.model';
 import { GoogleAuthService } from '../../music/services/google-auth.service';
 import { DriveService } from '../../music/services/drive.service';
-import { DriveLoginComponent } from '../../music/components/drive-login/drive-login.component';
 import { HeaderComponent } from '../header/header.component';
+import { DriveLoginComponent } from '../../music/components/drive-login/drive-login.component';
 
 @Component({
   selector: 'app-notes',
