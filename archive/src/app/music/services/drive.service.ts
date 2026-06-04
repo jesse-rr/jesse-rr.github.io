@@ -60,6 +60,12 @@ export class DriveService {
   }
 
   async listFolder(folderId: string): Promise<DriveFile[]> {
+    const cacheKey = `drive_list_cache_${folderId}`;
+    const cached = this.getCache<DriveFile[]>(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
     this.loadingSubject.next(true);
     try {
       const query = `'${folderId}' in parents and trashed=false`;
@@ -76,12 +82,15 @@ export class DriveService {
         pageToken = res.nextPageToken;
       } while (pageToken);
 
-      return allFiles.sort((a, b) => {
+      const sorted = allFiles.sort((a, b) => {
         const aIsFolder = a.mimeType === FOLDER_MIME ? 0 : 1;
         const bIsFolder = b.mimeType === FOLDER_MIME ? 0 : 1;
         if (aIsFolder !== bIsFolder) return aIsFolder - bIsFolder;
         return a.name.localeCompare(b.name);
       });
+
+      this.setCache(cacheKey, sorted);
+      return sorted;
     } finally {
       this.loadingSubject.next(false);
     }
@@ -98,11 +107,14 @@ export class DriveService {
       parents: [parentId],
     };
 
-    return this.request<DriveFile>(`${API_BASE}/files?fields=id,name,mimeType,parents`, {
+    const created = await this.request<DriveFile>(`${API_BASE}/files?fields=id,name,mimeType,parents`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(metadata),
     });
+
+    this.clearCache(`drive_list_cache_${parentId}`);
+    return created;
   }
 
   async createMarkdownFile(name: string, parentId: string, content: string): Promise<DriveFile> {
@@ -116,7 +128,7 @@ export class DriveService {
   }
 
   async updateMarkdownFile(fileId: string, content: string): Promise<DriveFile> {
-    return this.request<DriveFile>(
+    const res = await this.request<DriveFile>(
         `${UPLOAD_BASE}/files/${fileId}?uploadType=media`,
         {
           method: 'PATCH',
@@ -124,16 +136,26 @@ export class DriveService {
           body: content,
         }
     );
+    this.setCache(`drive_content_cache_${fileId}`, content);
+    return res;
   }
 
   async getMarkdownContent(fileId: string): Promise<string> {
+    const cacheKey = `drive_content_cache_${fileId}`;
+    const cached = this.getCache<string>(cacheKey);
+    if (cached !== null) {
+      return cached;
+    }
+
     const res = await fetch(`${API_BASE}/files/${fileId}?alt=media`, {
       headers: this.headers,
     });
     if (!res.ok) {
       throw new Error(`Failed to get file content: ${res.status}`);
     }
-    return res.text();
+    const text = await res.text();
+    this.setCache(cacheKey, text);
+    return text;
   }
 
   private async uploadTextContent(metadata: any, content: string): Promise<DriveFile> {
@@ -150,7 +172,7 @@ export class DriveService {
         content +
         closeDelimiter;
 
-    return this.request<DriveFile>(
+    const created = await this.request<DriveFile>(
         `${UPLOAD_BASE}/files?uploadType=multipart&fields=id,name,mimeType,size,modifiedTime,parents`,
         {
           method: 'POST',
@@ -158,6 +180,12 @@ export class DriveService {
           body,
         }
     );
+
+    if (created.parents && created.parents[0]) {
+      this.clearCache(`drive_list_cache_${created.parents[0]}`);
+    }
+    this.setCache(`drive_content_cache_${created.id}`, content);
+    return created;
   }
 
   async uploadFile(file: File, parentId: string, onProgress?: (pct: number) => void): Promise<DriveFile> {
@@ -250,7 +278,7 @@ export class DriveService {
   }
 
   async rename(fileId: string, newName: string): Promise<DriveFile> {
-    return this.request<DriveFile>(
+    const updated = await this.request<DriveFile>(
         `${API_BASE}/files/${fileId}?fields=id,name,mimeType,size,modifiedTime,parents`,
         {
           method: 'PATCH',
@@ -258,6 +286,11 @@ export class DriveService {
           body: JSON.stringify({ name: newName }),
         }
     );
+
+    if (updated.parents && updated.parents[0]) {
+      this.clearCache(`drive_list_cache_${updated.parents[0]}`);
+    }
+    return updated;
   }
 
   async move(fileId: string, newParentId: string, oldParentId: string): Promise<DriveFile> {
@@ -275,6 +308,8 @@ export class DriveService {
     await this.request<void>(`${API_BASE}/files/${fileId}`, {
       method: 'DELETE',
     });
+    this.clearCache(`drive_content_cache_${fileId}`);
+    this.clearFolderCaches();
   }
 
   async getFile(fileId: string): Promise<DriveFile> {
@@ -355,5 +390,44 @@ export class DriveService {
     }
 
     return parentId;
+  }
+
+  // Caching helper methods
+  private getCache<T>(key: string): T | null {
+    try {
+      const cached = localStorage.getItem(key);
+      if (cached) {
+        const item = JSON.parse(cached);
+        // Expiration: 5 minutes (300,000 milliseconds)
+        if (Date.now() - item.timestamp < 300000) {
+          return item.data as T;
+        }
+      }
+    } catch {}
+    return null;
+  }
+
+  private setCache(key: string, data: any) {
+    try {
+      localStorage.setItem(key, JSON.stringify({
+        timestamp: Date.now(),
+        data
+      }));
+    } catch {}
+  }
+
+  private clearCache(key: string) {
+    localStorage.removeItem(key);
+  }
+
+  private clearFolderCaches() {
+    try {
+      for (let i = localStorage.length - 1; i >= 0; i--) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('drive_list_cache_')) {
+          localStorage.removeItem(key);
+        }
+      }
+    } catch {}
   }
 }

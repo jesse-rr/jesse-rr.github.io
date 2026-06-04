@@ -9,6 +9,8 @@
     <a routerLink="/music" class="nav-link">Music</a>
     <a routerLink="/notes" class="nav-link">Notes</a>
     <a routerLink="/tierlist" class="nav-link">Tier List</a>
+    <a routerLink="/understand" class="nav-link">Taste</a>
+    <a routerLink="/browser" class="nav-link">Browser</a>
   </nav>
   <div class="user-section" *ngIf="authService.isAuthenticated && (authService.user$ | async) as user">
     <img [src]="user.picture" alt="Avatar" class="avatar">

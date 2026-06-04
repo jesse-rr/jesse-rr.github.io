@@ -1,126 +1,13 @@
 <app-header></app-header>
 
 <main class="home">
-  <div class="toolbar">
-    <div class="categories">
-      <button *ngFor="let cat of categories" class="cat-btn" [class.active]="selectedCategory === cat"
-              (click)="selectCategory(cat)">
-        {{ cat }}
-      </button>
-    </div>
+  <h1 class="home-title">Archive</h1>
+  <p class="home-subtitle">Select a tool to get started.</p>
 
-    <input class="search" type="text" placeholder="Search entries..." [(ngModel)]="searchQuery" />
-
-    <div class="tag-select" *ngIf="selectedCategory !== 'Notes'">
-      <select [(ngModel)]="selectedTag" class="tag-dropdown">
-        <option value="">All tags</option>
-        <option *ngFor="let tag of tags" [value]="tag">
-          {{ tag }}
-        </option>
-      </select>
-    </div>
-
-    <button class="new-note-btn" *ngIf="selectedCategory === 'Notes'" (click)="createNewNote()">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M12 5v14M5 12h14"/>
-      </svg>
-      New Note
-    </button>
+  <div class="gallery-grid">
+    <a *ngFor="let item of items" [routerLink]="item.route" class="gallery-item">
+      <h2 class="item-title">{{ item.title }}</h2>
+      <p class="item-desc">{{ item.description }}</p>
+    </a>
   </div>
-
-  <div class="grid" *ngIf="selectedCategory !== 'Notes'; else notesView">
-    <ng-container *ngFor="let e of filtered">
-      <app-folder *ngIf="e.category === 'Project'" [entry]="e"></app-folder>
-      <app-file *ngIf="e.category === 'File'" [entry]="e"></app-file>
-      <app-unidentified *ngIf="e.category === 'Undefined'" [entry]="e"></app-unidentified>
-    </ng-container>
-    <div *ngIf="filtered.length === 0" class="empty">No entries found.</div>
-  </div>
-
-  <ng-template #notesView>
-    <div class="notes-container">
-      <div class="notes-sidebar">
-        <div class="notes-folder-nav">
-          <button *ngFor="let folder of noteFolderPath; let i = index" (click)="navigateNoteFolder(i)">
-            {{ folder.name }} <span *ngIf="i < noteFolderPath.length - 1">/</span>
-          </button>
-        </div>
-        <div class="notes-list">
-          <div *ngFor="let note of noteFolderContents" class="note-item" [class.active]="selectedNote?.id === note.id" (click)="openNote(note)">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path *ngIf="note.mimeType === folderMime" d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
-              <path *ngIf="note.mimeType === folderMime" d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
-              <path *ngIf="note.mimeType !== folderMime" d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-              <polyline *ngIf="note.mimeType !== folderMime" points="14 2 14 8 20 8"/>
-            </svg>
-            <span class="note-name">{{ note.name }}</span>
-          </div>
-          <div *ngIf="noteFolderContents.length === 0" class="empty-notes">No notes in this folder</div>
-        </div>
-        <button class="new-folder-btn" (click)="createNoteFolder()">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
-            <line x1="12" y1="11" x2="12" y2="17"/>
-            <line x1="9" y1="14" x2="15" y2="14"/>
-          </svg>
-          New Folder
-        </button>
-      </div>
-
-      <div class="notes-editor" *ngIf="selectedNote; else noNoteSelected">
-        <div class="notes-editor-header">
-          <input type="text" class="note-title-input" [(ngModel)]="currentNoteTitle" placeholder="Note title" (blur)="saveCurrentNote()"/>
-          <div class="notes-editor-actions">
-            <button class="note-action-btn" (click)="saveCurrentNote()" [disabled]="savingNote">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
-                <polyline points="17 21 17 13 7 13 7 21"/>
-                <polyline points="7 3 7 8 15 8"/>
-              </svg>
-            </button>
-            <button class="note-action-btn" (click)="deleteCurrentNote()">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="3 6 5 6 21 6"/>
-                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-              </svg>
-            </button>
-          </div>
-        </div>
-        <textarea class="note-editor-textarea" [(ngModel)]="currentNoteContent" (blur)="saveCurrentNote()" placeholder="# Write your markdown here..."></textarea>
-      </div>
-
-      <div class="notes-preview" *ngIf="selectedNote; else noNoteSelected">
-        <div class="notes-preview-header">
-          <span>Preview</span>
-          <button class="note-action-btn" (click)="togglePreviewTheme()">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="5"/>
-              <line x1="12" y1="1" x2="12" y2="3"/>
-              <line x1="12" y1="21" x2="12" y2="23"/>
-              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
-              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
-              <line x1="1" y1="12" x2="3" y2="12"/>
-              <line x1="21" y1="12" x2="23" y2="12"/>
-              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
-              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
-            </svg>
-          </button>
-        </div>
-        <div class="notes-markdown-preview" [innerHTML]="renderedMarkdown"></div>
-      </div>
-
-      <ng-template #noNoteSelected>
-        <div class="notes-empty-state">
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-            <polyline points="14 2 14 8 20 8"/>
-            <line x1="16" y1="13" x2="8" y2="13"/>
-            <line x1="16" y1="17" x2="8" y2="17"/>
-            <polyline points="10 9 9 9 8 9"/>
-          </svg>
-          <p>Select a note or create a new one</p>
-        </div>
-      </ng-template>
-    </div>
-  </ng-template>
 </main>

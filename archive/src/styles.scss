@@ -54,12 +54,36 @@ body {
   color: var(--text);
   font-family: "Bebas Neue", sans-serif;
   min-height: 100dvh;
+  background: var(--bg);
 }
 
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  background: linear-gradient(180deg, var(--bg) 0%, var(--bg-2) 100%);
-  z-index: -1;
+/* Global Animation Decoupling: Disable hover raising/scaling transforms, keep color & folder opening */
+.file:hover,
+.unidentified-body:hover,
+.music-file-card:hover,
+.btn:hover,
+button:hover,
+.note-item:hover,
+.cat-btn:hover,
+.tag-dropdown:hover,
+.note-action-btn:hover,
+.new-folder-btn:hover,
+.music-breadcrumb button:hover,
+a:hover {
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+.folder:hover,
+.music-folder-card:hover {
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+.btn-pulse::after {
+  display: none !important;
+}
+
+.btn, button, .file, .unidentified, .music-file-card, .music-folder-card {
+  transition: background 0.1s ease, color 0.1s ease, border-color 0.1s ease !important;
 }

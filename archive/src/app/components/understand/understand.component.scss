@@ -1,0 +1,420 @@
+.understand-container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 40px 20px;
+  box-sizing: border-box;
+  font-family: sans-serif;
+  color: var(--text) !important;
+
+  // Set all child texts to use the theme text color to automatically change if light/dark mode
+  h1, h2, h3, h4, h5, h6, p, span, li, button, div {
+    color: var(--text) !important;
+  }
+
+  h1, h2, h3, h4, h5 {
+    font-family: "Bebas Neue", sans-serif;
+    letter-spacing: 1.5px;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+  }
+}
+
+// Flat layouts - no card backgrounds, no glassmorphism
+.welcome-section,
+.question-section,
+.results-dashboard,
+.existing-profile-teaser,
+.archetype-hero-panel,
+.combination-panel,
+.top-genres-panel,
+.all-scores-panel {
+  background: transparent !important;
+  border: none !important;
+  padding: 20px 0;
+  margin-bottom: 30px;
+}
+
+// Title styling
+.title {
+  font-size: 3.2rem;
+  margin-bottom: 8px;
+  letter-spacing: 2px;
+}
+
+.subtitle {
+  font-size: 1.1rem;
+  margin-bottom: 30px;
+  line-height: 1.5;
+  opacity: 0.85; // Muted off-white/off-black instead of gray
+}
+
+.welcome-intro {
+  margin-top: 20px;
+  
+  .intro-text {
+    font-size: 1.05rem;
+    line-height: 1.6;
+    margin-bottom: 35px;
+    opacity: 0.9;
+  }
+}
+
+// Simple Outlined Option Rows
+.options-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 25px 0;
+}
+
+.option-row {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  background: transparent !important;
+  border: 1px solid var(--border) !important;
+  color: var(--text) !important;
+  padding: 18px 24px;
+  text-align: left;
+  cursor: pointer;
+  border-radius: 4px;
+  box-sizing: border-box;
+
+  .rank-badge {
+    font-family: "Bebas Neue", sans-serif;
+    color: var(--accent) !important;
+    border: 1px solid var(--accent) !important;
+    padding: 3px 8px;
+    margin-right: 18px;
+    font-size: 1.1rem;
+    letter-spacing: 0.5px;
+    border-radius: 2px;
+    white-space: nowrap;
+
+    &.empty {
+      opacity: 0.4;
+      border-color: var(--border) !important;
+      color: var(--text) !important;
+    }
+  }
+
+  .option-text {
+    font-size: 1rem;
+    line-height: 1.4;
+  }
+
+  &.ranked {
+    border-color: var(--accent) !important;
+  }
+
+  // Purely outline borders highlight on hover, no background colors or transitions
+  &:hover {
+    border-color: var(--text) !important;
+  }
+}
+
+.ranking-instruction {
+  font-size: 0.95rem;
+  margin-bottom: 15px;
+  opacity: 0.8;
+}
+
+.question-title {
+  font-size: 2.2rem;
+  line-height: 1.2;
+  border-left: 3px solid var(--accent);
+  padding-left: 15px;
+  margin-bottom: 10px;
+}
+
+// Flat Progress Bar
+.progress-bar-container {
+  margin-bottom: 25px;
+
+  .progress-bar-track {
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 8px;
+  }
+
+  .progress-bar-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 2px;
+  }
+
+  .progress-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.85rem;
+    opacity: 0.8;
+  }
+}
+
+// Navigation Controls
+.navigation-controls, .results-controls {
+  display: flex;
+  gap: 15px;
+  margin-top: 20px;
+}
+
+// Flat transparent buttons
+.btn {
+  font-family: "Bebas Neue", sans-serif;
+  font-size: 1.2rem;
+  letter-spacing: 1px;
+  padding: 10px 24px;
+  border-radius: 4px;
+  background: transparent !important;
+  cursor: pointer;
+  text-transform: uppercase;
+  box-sizing: border-box;
+
+  &-primary {
+    border: 1px solid var(--accent) !important;
+    color: var(--accent) !important;
+
+    * {
+      color: var(--accent) !important;
+    }
+
+    &:hover {
+      border-color: var(--text) !important;
+      color: var(--text) !important;
+
+      * {
+        color: var(--text) !important;
+      }
+    }
+  }
+
+  &-secondary {
+    border: 1px solid var(--border) !important;
+    color: var(--text) !important;
+
+    &:hover {
+      border-color: var(--text) !important;
+    }
+  }
+
+  &-danger {
+    border: 1px solid #ef233c !important;
+    color: #ef233c !important;
+
+    * {
+      color: #ef233c !important;
+    }
+
+    &:hover {
+      border-color: #ff4d6d !important;
+      color: #ff4d6d !important;
+
+      * {
+        color: #ff4d6d !important;
+      }
+    }
+  }
+}
+
+// Teaser active profile
+.existing-profile-teaser {
+  border: 1px solid var(--border) !important;
+  padding: 30px;
+  border-radius: 6px;
+
+  .teaser-tag {
+    font-size: 0.85rem;
+    font-weight: bold;
+    color: var(--accent) !important;
+    letter-spacing: 1.5px;
+    margin-bottom: 5px;
+  }
+
+  .teaser-archetype {
+    font-size: 2.5rem;
+    margin-bottom: 8px;
+  }
+
+  .teaser-desc {
+    font-size: 1rem;
+    line-height: 1.5;
+    margin-bottom: 20px;
+    opacity: 0.9;
+  }
+
+  .teaser-combination {
+    margin-bottom: 25px;
+
+    .combination-label {
+      margin-right: 8px;
+      opacity: 0.8;
+    }
+
+    .combination-value {
+      font-weight: bold;
+      color: var(--accent) !important;
+    }
+  }
+}
+
+// Results Panel Layout
+.archetype-hero-panel {
+  border-bottom: 1px solid var(--border) !important;
+  padding-bottom: 30px;
+
+  .tag {
+    font-size: 0.85rem;
+    color: var(--accent) !important;
+    letter-spacing: 1.5px;
+    margin-bottom: 5px;
+    font-weight: bold;
+  }
+
+  .hero-title {
+    font-size: 3.8rem;
+    margin-bottom: 12px;
+    line-height: 1.1;
+  }
+
+  .hero-desc {
+    font-size: 1.1rem;
+    line-height: 1.6;
+    opacity: 0.9;
+  }
+}
+
+.section-heading {
+  font-size: 1.8rem;
+  border-bottom: 1px solid var(--border) !important;
+  padding-bottom: 10px;
+  margin-bottom: 20px;
+}
+
+.combination-content {
+  .combination-title {
+    font-size: 2.2rem;
+    color: var(--accent) !important;
+    margin-bottom: 10px;
+  }
+
+  .combination-description {
+    font-size: 1.05rem;
+    line-height: 1.6;
+    margin-bottom: 25px;
+    opacity: 0.85;
+  }
+
+  .sub-heading {
+    font-size: 1.3rem;
+    margin-bottom: 15px;
+  }
+}
+
+// Flat list for games suggestions
+.games-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.game-card-flat {
+  border-left: 2px solid var(--accent) !important;
+  padding: 5px 0 5px 15px;
+
+  .game-name {
+    font-size: 1.4rem;
+    margin-bottom: 4px;
+  }
+
+  .game-description {
+    font-size: 0.95rem;
+    line-height: 1.4;
+    opacity: 0.8;
+  }
+}
+
+// Top Genres breakdown
+.top-genres-panel {
+  .genre-detail-flat {
+    margin-bottom: 25px;
+
+    .genre-detail-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+
+      .genre-title {
+        font-family: "Bebas Neue", sans-serif;
+        font-size: 1.8rem;
+        letter-spacing: 1px;
+        color: var(--accent) !important;
+      }
+
+      .genre-score {
+        font-family: "Bebas Neue", sans-serif;
+        font-size: 1.2rem;
+        opacity: 0.8;
+      }
+    }
+
+    .genre-why-list {
+      margin-left: 20px;
+      line-height: 1.5;
+      font-size: 0.95rem;
+      opacity: 0.85;
+
+      li {
+        margin-bottom: 6px;
+      }
+    }
+  }
+}
+
+// Scores Table
+.scores-table {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.score-row-flat {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  font-size: 0.95rem;
+
+  .score-name {
+    width: 100px;
+    font-family: "Bebas Neue", sans-serif;
+    font-size: 1.15rem;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .score-bar-bg {
+    flex-grow: 1;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .score-bar-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 2px;
+  }
+
+  .score-num {
+    width: 30px;
+    text-align: right;
+    font-family: "Bebas Neue", sans-serif;
+    font-size: 1.1rem;
+    opacity: 0.8;
+  }
+}
