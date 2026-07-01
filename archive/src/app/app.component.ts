@@ -1,8 +1,8 @@
 import { Component } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { CommonModule } from '@angular/common';
-import { DriveLoginComponent } from './music/components/drive-login/drive-login.component';
-import { GoogleAuthService } from './music/services/google-auth.service';
+import { DriveLoginComponent } from './shared/components/drive-login/drive-login.component';
+import { GoogleAuthService } from './core/services/google-auth.service';
 
 @Component({
   selector: 'app-root',

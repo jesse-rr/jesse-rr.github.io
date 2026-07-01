@@ -1,0 +1,593 @@
+import { Component, OnInit, OnDestroy, ViewChild, ElementRef } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { Subscription } from 'rxjs';
+import JSZip from 'jszip';
+import { HeaderComponent } from '../../../../shared/components/header/header.component';
+import { DriveLoginComponent } from '../../../../shared/components/drive-login/drive-login.component';
+import { MusicBreadcrumbComponent } from '../music-breadcrumb/music-breadcrumb.component';
+import { MusicToolbarComponent } from '../music-toolbar/music-toolbar.component';
+import { MusicFolderCardComponent } from '../music-folder-card/music-folder-card.component';
+import { MusicFileCardComponent } from '../music-file-card/music-file-card.component';
+import { ContextMenuComponent, ContextMenuAction } from '../context-menu/context-menu.component';
+import { GoogleAuthService } from '../../../../core/services/google-auth.service';
+import { DriveService } from '../../../../core/services/drive.service';
+import { DriveFile, BreadcrumbItem, FOLDER_MIME } from '../../../../shared/models/drive.model';
+
+@Component({
+  selector: 'app-music-page',
+  imports: [
+    CommonModule,
+    HeaderComponent,
+    DriveLoginComponent,
+    MusicBreadcrumbComponent,
+    MusicToolbarComponent,
+    MusicFolderCardComponent,
+    MusicFileCardComponent,
+    ContextMenuComponent
+  ],
+  templateUrl: './music-page.component.html',
+  styleUrl: './music-page.component.scss'
+})
+export class MusicPageComponent implements OnInit, OnDestroy {
+  isAuthenticated = false;
+  loading = false;
+  error: string | null = null;
+
+  currentFolderId: string | null = null;
+  files: DriveFile[] = [];
+  breadcrumb: BreadcrumbItem[] = [];
+
+  contextMenuVisible = false;
+  contextMenuX = 0;
+  contextMenuY = 0;
+  contextMenuTarget: DriveFile | null = null;
+
+  uploadProgress: number | null = null;
+  selectedFiles: Set<string> = new Set();
+  isDragging = false;
+  searchQuery = '';
+  sortOrder: 'asc' | 'desc' = 'asc';
+
+  playingFile: DriveFile | null = null;
+  audioBlobUrl: string | null = null;
+  audioLoading = false;
+  audioPlaying = false;
+  audioCurrentTime = 0;
+  audioDuration = 0;
+  audioVolume = 1;
+
+  toastMessage: string | null = null;
+  toastTimeout: any = null;
+
+  @ViewChild('audioElement') audioElement!: ElementRef<HTMLAudioElement>;
+
+  private subscriptions: Subscription[] = [];
+
+  get folders(): DriveFile[] {
+    return this.filterAndSort(this.files.filter(f => f.mimeType === FOLDER_MIME));
+  }
+
+  get audioFiles(): DriveFile[] {
+    return this.filterAndSort(this.files.filter(f => f.mimeType !== FOLDER_MIME));
+  }
+
+  private filterAndSort(files: DriveFile[]): DriveFile[] {
+    let result = [...files];
+    if (this.searchQuery) {
+      const q = this.searchQuery.toLowerCase();
+      result = result.filter(f => f.name.toLowerCase().includes(q));
+    }
+    result.sort((a, b) => {
+      const cmp = a.name.localeCompare(b.name);
+      return this.sortOrder === 'asc' ? cmp : -cmp;
+    });
+    return result;
+  }
+
+  constructor(
+    private authService: GoogleAuthService,
+    private driveService: DriveService
+  ) {}
+
+  ngOnInit() {
+    this.subscriptions.push(
+      this.authService.accessToken$.subscribe(token => {
+        this.isAuthenticated = !!token;
+        if (token) {
+          this.initDrive();
+        }
+      })
+    );
+
+    this.subscriptions.push(
+      this.driveService.loading$.subscribe(loading => {
+        this.loading = loading;
+      })
+    );
+  }
+
+  ngOnDestroy() {
+    this.subscriptions.forEach(s => s.unsubscribe());
+    this.cleanupAudio();
+  }
+
+  async initDrive() {
+    try {
+      this.error = null;
+      const rootId = await this.driveService.resolveMusicRoot();
+      this.currentFolderId = rootId;
+      this.breadcrumb = [{ id: rootId, name: 'Music' }];
+      await this.loadFolder(rootId);
+    } catch (err: any) {
+      this.error = 'Failed to connect to Google Drive. Please try again.';
+      console.error(err);
+    }
+  }
+
+  async loadFolder(folderId: string) {
+    try {
+      this.error = null;
+      this.currentFolderId = folderId;
+      this.files = await this.driveService.listFolder(folderId);
+    } catch (err: any) {
+      this.error = 'Failed to load folder contents.';
+      console.error(err);
+    }
+  }
+
+  async navigateToFolder(folder: DriveFile) {
+    this.breadcrumb.push({ id: folder.id, name: folder.name });
+    await this.loadFolder(folder.id);
+  }
+
+  async navigateToBreadcrumb(item: BreadcrumbItem) {
+    const index = this.breadcrumb.findIndex(b => b.id === item.id);
+    if (index >= 0) {
+      this.breadcrumb = this.breadcrumb.slice(0, index + 1);
+      await this.loadFolder(item.id);
+    }
+  }
+
+  onCreateFolder() {
+    const name = prompt('Enter folder name:');
+    if (name && name.trim()) {
+      this.onCreateFolderConfirm(name.trim());
+    }
+  }
+
+  async onCreateFolderConfirm(name: string) {
+    if (!this.currentFolderId) return;
+    try {
+      await this.driveService.createFolder(name, this.currentFolderId);
+      await this.loadFolder(this.currentFolderId);
+      this.showToast(`Created folder "${name}"`);
+    } catch (err) {
+      this.showToast('Failed to create folder');
+      console.error(err);
+    }
+  }
+
+  async onUploadFiles(files: FileList) {
+    if (!this.currentFolderId || files.length === 0) return;
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      
+      const duplicate = this.files.find(f => f.name.toLowerCase() === file.name.toLowerCase());
+      if (duplicate) {
+        this.showToast(`Error: "${file.name}" already exists in this folder.`);
+        continue;
+      }
+
+      try {
+        this.uploadProgress = 0;
+        await this.driveService.uploadFile(file, this.currentFolderId, (pct) => {
+          this.uploadProgress = pct;
+        });
+        this.showToast(`Uploaded "${file.name}"`);
+      } catch (err) {
+        this.showToast(`Failed to upload "${file.name}"`);
+        console.error(err);
+      }
+    }
+
+    this.uploadProgress = null;
+    await this.loadFolder(this.currentFolderId);
+  }
+
+  onContextMenu(event: { x: number; y: number; file: DriveFile }) {
+    if (!this.selectedFiles.has(event.file.id)) {
+      this.selectedFiles.clear();
+      this.selectedFiles.add(event.file.id);
+    }
+    this.contextMenuX = event.x;
+    this.contextMenuY = event.y;
+    this.contextMenuTarget = event.file;
+    this.contextMenuVisible = true;
+  }
+
+  toggleSelection(file: DriveFile, event: MouseEvent) {
+    if (event.ctrlKey || event.metaKey) {
+      if (this.selectedFiles.has(file.id)) {
+        this.selectedFiles.delete(file.id);
+      } else {
+        this.selectedFiles.add(file.id);
+      }
+    } else if (event.shiftKey && this.selectedFiles.size > 0) {
+      const allFiles = [...this.folders, ...this.audioFiles];
+      const fileIds = allFiles.map(f => f.id);
+      const lastSelectedId = Array.from(this.selectedFiles).pop()!;
+      const lastIndex = fileIds.indexOf(lastSelectedId);
+      const currentIndex = fileIds.indexOf(file.id);
+      
+      const start = Math.min(lastIndex, currentIndex);
+      const end = Math.max(lastIndex, currentIndex);
+      
+      for (let i = start; i <= end; i++) {
+        this.selectedFiles.add(fileIds[i]);
+      }
+    } else {
+      this.selectedFiles.clear();
+      this.selectedFiles.add(file.id);
+    }
+  }
+
+  onDragStart(event: DragEvent, file: DriveFile) {
+    if (!this.selectedFiles.has(file.id)) {
+      this.selectedFiles.clear();
+      this.selectedFiles.add(file.id);
+    }
+    this.isDragging = true;
+    event.dataTransfer?.setData('text/plain', JSON.stringify(Array.from(this.selectedFiles)));
+    event.dataTransfer!.effectAllowed = 'move';
+  }
+
+  onDragEnd() {
+    this.isDragging = false;
+  }
+
+  async onDropOnFolder(targetFolder: DriveFile) {
+    if (!this.currentFolderId || this.selectedFiles.size === 0) return;
+    
+    const fileIdsToMove = Array.from(this.selectedFiles).filter(id => id !== targetFolder.id);
+    if (fileIdsToMove.length === 0) return;
+
+    this.loading = true;
+    try {
+      for (const fileId of fileIdsToMove) {
+        await this.driveService.move(fileId, targetFolder.id, this.currentFolderId);
+      }
+      this.showToast(`Moved ${fileIdsToMove.length} item(s) to ${targetFolder.name}`);
+      this.selectedFiles.clear();
+      await this.loadFolder(this.currentFolderId);
+    } catch (err) {
+      this.showToast('Failed to move some items');
+      console.error(err);
+    } finally {
+      this.loading = false;
+    }
+  }
+
+  onSearch(query: string) {
+    this.searchQuery = query;
+  }
+
+  onSortChange(order: 'asc' | 'desc') {
+    this.sortOrder = order;
+  }
+
+  async onDropOnBreadcrumb(item: BreadcrumbItem) {
+    if (!this.currentFolderId || this.selectedFiles.size === 0 || item.id === this.currentFolderId) return;
+
+    this.loading = true;
+    try {
+      const fileIds = Array.from(this.selectedFiles);
+      for (const id of fileIds) {
+        await this.driveService.move(id, item.id, this.currentFolderId);
+      }
+      this.showToast(`Moved ${fileIds.length} item(s) to ${item.name}`);
+      this.selectedFiles.clear();
+      await this.loadFolder(this.currentFolderId);
+    } catch (err) {
+      this.showToast('Failed to move items');
+      console.error(err);
+    } finally {
+      this.loading = false;
+    }
+  }
+
+  onCloseContextMenu() {
+    this.contextMenuVisible = false;
+    this.contextMenuTarget = null;
+  }
+
+  async onContextMenuAction(action: ContextMenuAction) {
+    const target = this.contextMenuTarget;
+    this.onCloseContextMenu();
+    if (!target || !this.currentFolderId) return;
+
+    switch (action) {
+      case 'rename':
+        const newName = prompt('Enter new name:', target.name);
+        if (newName && newName.trim() && newName.trim() !== target.name) {
+          try {
+            await this.driveService.rename(target.id, newName.trim());
+            await this.loadFolder(this.currentFolderId);
+            this.showToast(`Renamed to "${newName}"`);
+          } catch (err) {
+            this.showToast('Failed to rename');
+          }
+        }
+        break;
+
+      case 'delete':
+        const count = this.selectedFiles.size;
+        const msg = count > 1 ? `Delete ${count} items?` : `Delete "${target.name}"?`;
+        if (confirm(`${msg} This cannot be undone.`)) {
+          try {
+            for (const id of this.selectedFiles) {
+              await this.driveService.delete(id);
+            }
+            await this.loadFolder(this.currentFolderId);
+            this.showToast(`Deleted ${count} item(s)`);
+            this.selectedFiles.clear();
+          } catch (err) {
+            this.showToast('Failed to delete some items');
+            console.error(err);
+          }
+        }
+        break;
+
+      case 'move':
+        try {
+          const folders = await this.driveService.listAllFolders();
+          const listStr = folders.map(f => f.name).join(', ');
+          const destName = prompt(`Enter destination folder name:\nAvailable folders: ${listStr}`);
+          if (destName && destName.trim()) {
+            const targetFolder = folders.find(f => f.name.toLowerCase() === destName.trim().toLowerCase());
+            if (targetFolder) {
+              await this.driveService.move(target.id, targetFolder.id, this.currentFolderId);
+              await this.loadFolder(this.currentFolderId);
+              this.showToast('Moved successfully');
+            } else {
+              alert('Folder not found.');
+            }
+          }
+        } catch (err) {
+          this.showToast('Failed to move item');
+        }
+        break;
+
+      case 'play':
+        this.startPlayback(target);
+        break;
+
+      case 'download':
+        this.downloadItem(target);
+        break;
+    }
+  }
+
+  async onPlayFile(file: DriveFile) {
+    if (this.playingFile?.id === file.id) {
+      this.togglePlayPause();
+      return;
+    }
+    await this.startPlayback(file);
+  }
+
+  private async startPlayback(file: DriveFile) {
+    this.cleanupAudio();
+    this.playingFile = file;
+    this.audioLoading = true;
+    this.audioPlaying = false;
+
+    try {
+      const url = this.driveService.getStreamUrl(file.id);
+      const res = await fetch(url, {
+        headers: { Authorization: `Bearer ${this.authService.accessToken}` }
+      });
+
+      if (!res.ok) throw new Error(`Failed to stream: ${res.status}`);
+
+      const blob = await res.blob();
+      this.audioBlobUrl = URL.createObjectURL(blob);
+      this.audioLoading = false;
+
+      setTimeout(() => {
+        if (this.audioElement?.nativeElement) {
+          const audio = this.audioElement.nativeElement;
+          audio.volume = this.audioVolume;
+          audio.play().catch(() => {});
+        }
+      }, 50);
+    } catch (err) {
+      this.audioLoading = false;
+      this.playingFile = null;
+      this.showToast('Failed to play audio');
+      console.error(err);
+    }
+  }
+
+  togglePlayPause() {
+    if (!this.audioElement?.nativeElement) return;
+    const audio = this.audioElement.nativeElement;
+    if (audio.paused) {
+      audio.play();
+    } else {
+      audio.pause();
+    }
+  }
+
+  onAudioPlay() {
+    this.audioPlaying = true;
+  }
+
+  onAudioPause() {
+    this.audioPlaying = false;
+  }
+
+  onAudioTimeUpdate() {
+    if (!this.audioElement?.nativeElement) return;
+    this.audioCurrentTime = this.audioElement.nativeElement.currentTime;
+  }
+
+  onAudioLoaded() {
+    if (!this.audioElement?.nativeElement) return;
+    this.audioDuration = this.audioElement.nativeElement.duration;
+  }
+
+  onSeek(event: MouseEvent, progressBar: HTMLElement) {
+    if (!this.audioElement?.nativeElement || !this.audioDuration) return;
+    const rect = progressBar.getBoundingClientRect();
+    const pct = (event.clientX - rect.left) / rect.width;
+    this.audioElement.nativeElement.currentTime = pct * this.audioDuration;
+  }
+
+  onVolumeChange(event: Event) {
+    const input = event.target as HTMLInputElement;
+    this.audioVolume = parseFloat(input.value);
+    if (this.audioElement?.nativeElement) {
+      this.audioElement.nativeElement.volume = this.audioVolume;
+    }
+  }
+
+  formatTime(seconds: number): string {
+    if (!seconds || isNaN(seconds)) return '0:00';
+    const m = Math.floor(seconds / 60);
+    const s = Math.floor(seconds % 60);
+    return `${m}:${s.toString().padStart(2, '0')}`;
+  }
+
+  get progressPercent(): number {
+    if (!this.audioDuration) return 0;
+    return (this.audioCurrentTime / this.audioDuration) * 100;
+  }
+
+  onStopPlayback() {
+    this.cleanupAudio();
+    this.playingFile = null;
+    this.audioPlaying = false;
+    this.audioCurrentTime = 0;
+    this.audioDuration = 0;
+  }
+
+  onAudioEnded() {
+    this.playNext();
+  }
+
+  playNext() {
+    if (!this.playingFile) return;
+    const index = this.audioFiles.findIndex(f => f.id === this.playingFile!.id);
+    if (index >= 0 && index < this.audioFiles.length - 1) {
+      this.onPlayFile(this.audioFiles[index + 1]);
+    } else {
+      this.onStopPlayback();
+    }
+  }
+
+  private cleanupAudio() {
+    if (this.audioBlobUrl) {
+      URL.revokeObjectURL(this.audioBlobUrl);
+      this.audioBlobUrl = null;
+    }
+  }
+
+  private async downloadItem(file: DriveFile) {
+    if (file.mimeType === FOLDER_MIME) {
+      await this.downloadFolder(file);
+    } else {
+      await this.downloadFile(file);
+    }
+  }
+
+  private async downloadFile(file: DriveFile) {
+    try {
+      this.showToast(`Downloading "${file.name}"...`);
+      const url = this.driveService.getStreamUrl(file.id);
+      const res = await fetch(url, {
+        headers: { Authorization: `Bearer ${this.authService.accessToken}` }
+      });
+      if (!res.ok) throw new Error(`Download failed: ${res.status}`);
+
+      const blob = await res.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = file.name;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(blobUrl);
+    } catch (err) {
+      this.showToast('Failed to download');
+      console.error(err);
+    }
+  }
+
+  private async downloadFolder(folder: DriveFile) {
+    try {
+      this.showToast(`Preparing "${folder.name}" for download...`);
+      const files = await this.driveService.listFolder(folder.id);
+      const audioFiles = files.filter(f => f.mimeType !== FOLDER_MIME);
+
+      if (audioFiles.length === 0) {
+        this.showToast('Folder is empty');
+        return;
+      }
+
+      const zip = new JSZip();
+
+      for (let i = 0; i < audioFiles.length; i++) {
+        const file = audioFiles[i];
+        this.showToast(`Downloading ${i + 1}/${audioFiles.length}: ${file.name}`);
+        const url = this.driveService.getStreamUrl(file.id);
+        const res = await fetch(url, {
+          headers: { Authorization: `Bearer ${this.authService.accessToken}` }
+        });
+        if (res.ok) {
+          const blob = await res.blob();
+          zip.file(file.name, blob);
+        }
+      }
+
+      this.showToast('Creating zip file...');
+      const zipBlob = await zip.generateAsync({ type: 'blob' });
+      const blobUrl = URL.createObjectURL(zipBlob);
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = `${folder.name}.zip`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(blobUrl);
+      this.showToast(`Downloaded "${folder.name}.zip"`);
+    } catch (err) {
+      this.showToast('Failed to download folder');
+      console.error(err);
+    }
+  }
+
+  logout() {
+    this.authService.logout();
+    this.files = [];
+    this.breadcrumb = [];
+    this.currentFolderId = null;
+    this.cleanupAudio();
+    this.playingFile = null;
+  }
+
+  private showToast(message: string) {
+    if (this.toastTimeout) clearTimeout(this.toastTimeout);
+    this.toastMessage = message;
+    this.toastTimeout = setTimeout(() => {
+      this.toastMessage = null;
+    }, 3000);
+  }
+
+  refresh() {
+    if (this.currentFolderId) {
+      this.loadFolder(this.currentFolderId);
+    }
+  }
+}

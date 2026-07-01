@@ -1,0 +1,23 @@
+{
+  "manifest_version": 3,
+  "name": "Everyday Creator Helper",
+  "version": "1.0.0",
+  "description": "Send ideas, text selections, and URLs directly to your Everyday Creator dashboard.",
+  "permissions": [
+    "activeTab",
+    "contextMenus",
+    "storage"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Everyday Creator"
+  },
+  "background": {
+    "scripts": ["background.js"]
+  },
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "helper@everyday-creator.jesse-rr.github.io"
+    }
+  }
+}

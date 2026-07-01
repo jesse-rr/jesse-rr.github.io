@@ -1,0 +1,140 @@
+<app-header></app-header>
+
+<main class="understand-container">
+  <div *ngIf="state.phase === 'welcome'" class="welcome-section">
+    <h1 class="title">Discover Your Gaming Taste</h1>
+    <p class="subtitle">An interactive ranking questionnaire to map your gaming style, favorite genre pairs, and matching game titles.</p>
+
+    <div *ngIf="state.profile" class="existing-profile-teaser">
+      <div class="teaser-tag">YOUR ARCHETYPE</div>
+      <h2 class="teaser-archetype">{{ state.profile.archetype }}</h2>
+      <p class="teaser-desc">{{ state.profile.archetypeDescription }}</p>
+      
+      <div class="teaser-combination">
+        <span class="combination-label">Genre Match:</span>
+        <span class="combination-value">{{ state.profile.combination.name }}</span>
+      </div>
+
+      <div class="action-buttons">
+        <button class="btn btn-primary" (click)="state.phase = 'results'">
+          View Taste Profile
+        </button>
+        <button class="btn btn-secondary" (click)="startTest()">
+          Retake Questionnaire
+        </button>
+      </div>
+    </div>
+
+    <div *ngIf="!state.profile" class="welcome-intro">
+      <p class="intro-text">
+        Instead of selecting a single answer, you will rank choices from most likely (1) to least likely. 
+        Your preferences will shape branching questions to discover your favorite genre combinations and actual game recommendations.
+      </p>
+      <div class="action-buttons">
+        <button class="btn btn-primary" (click)="startTest()">
+          Begin Taste Discovery
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="state.phase === 'questions'" class="question-section">
+    <div class="progress-bar-container">
+      <div class="progress-bar-track">
+        <div class="progress-bar-fill" [style.width.%]="progressPercent"></div>
+      </div>
+      <div class="progress-labels">
+        <span>Step {{ state.currentStep + 1 }} of {{ activeQuestions.length }}</span>
+        <span>{{ progressPercent }}% Complete</span>
+      </div>
+    </div>
+
+    <div class="question-body" *ngIf="activeQuestions[state.currentStep] as currentQuestion">
+      <h2 class="question-title">{{ currentQuestion.text }}</h2>
+      <p class="ranking-instruction">Click options in order of preference to rank them (1st choice, 2nd, etc.). Click again to clear.</p>
+
+      <div class="options-list">
+        <button 
+          *ngFor="let option of currentQuestion.options; let i = index" 
+          class="option-row"
+          [class.ranked]="getOptionRank(i) > 0"
+          (click)="toggleRankOption(i)"
+        >
+          <span class="rank-badge" *ngIf="getOptionRank(i) > 0">Rank {{ getOptionRank(i) }}</span>
+          <span class="rank-badge empty" *ngIf="getOptionRank(i) === 0">—</span>
+          <span class="option-text">{{ option.text }}</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="navigation-controls">
+      <button class="btn btn-secondary" (click)="previousStep()">
+        Back
+      </button>
+      <button class="btn btn-primary" *ngIf="isCurrentStepFullyRanked" (click)="nextStep()">
+        Next Question →
+      </button>
+    </div>
+  </div>
+
+  <div *ngIf="state.phase === 'results' && state.profile" class="results-dashboard">
+    
+    <div class="archetype-hero-panel">
+      <div class="tag">YOUR GAMER PROFILE</div>
+      <h1 class="hero-title">{{ state.profile.archetype }}</h1>
+      <p class="hero-desc">{{ state.profile.archetypeDescription }}</p>
+    </div>
+
+    <div class="combination-panel">
+      <h2 class="section-heading">RECOMMENDED GENRE COMBINATION</h2>
+      <div class="combination-content">
+        <h3 class="combination-title">{{ state.profile.combination.name }}</h3>
+        <p class="combination-description">{{ state.profile.combination.description }}</p>
+
+        <h4 class="sub-heading">Suggested Games Based on This Blend:</h4>
+        <div class="games-grid">
+          <div *ngFor="let game of state.profile.combination.games" class="game-card-flat">
+            <h5 class="game-name">{{ game.name }}</h5>
+            <p class="game-description">{{ game.desc }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="top-genres-panel">
+      <h2 class="section-heading">PRIMARY GENRE PREFERENCES</h2>
+      
+      <div *ngFor="let tg of state.profile.topGenres" class="genre-detail-flat">
+        <div class="genre-detail-header">
+          <span class="genre-title">{{ tg.genre }}</span>
+          <span class="genre-score">Score: {{ tg.score }}</span>
+        </div>
+        <ul class="genre-why-list">
+          <li *ngFor="let reason of tg.why">{{ reason }}</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="all-scores-panel">
+      <h2 class="section-heading">ALL GENRE SCORE BREAKDOWN</h2>
+      <div class="scores-table">
+        <div *ngFor="let item of state.profile.scores | keyvalue" class="score-row-flat">
+          <span class="score-name">{{ item.key }}</span>
+          <div class="score-bar-bg">
+            <div class="score-bar-fill" [style.width.%]="(item.value / 12) * 100"></div>
+          </div>
+          <span class="score-num">{{ item.value | number:'1.1-1' }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="results-controls">
+      <button class="btn btn-primary" (click)="startTest()">
+        Retake Taste Test
+      </button>
+      <button class="btn btn-danger" (click)="clearProfile()">
+        Reset Profile
+      </button>
+    </div>
+  </div>
+</main>

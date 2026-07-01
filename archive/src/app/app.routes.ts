@@ -1,20 +1,19 @@
-// app.routes.ts - add tierlist route
 import { Routes } from '@angular/router';
-import { HomeComponent } from './components/home/home.component';
-import { EntryComponent } from './components/entry/entry.component';
-import { MusicPageComponent } from './music/components/music-page/music-page.component';
-import { NotesComponent } from './components/notes/notes.component';
-import { TierlistComponent } from './components/tierlist/tierlist.component';
-import { UnderstandComponent } from './components/understand/understand.component';
-import { BrowserComponent } from './components/browser/browser.component';
+import { HomeComponent } from './features/home/home.component';
+import { MusicPageComponent } from './features/music/components/music-page/music-page.component';
+import { NotesComponent } from './features/notes/notes.component';
+import { TierlistComponent } from './features/tierlist/tierlist.component';
+import { UnderstandComponent } from './features/understand/understand.component';
+import { BrowserComponent } from './features/browser/browser.component';
+import { ProjectsComponent } from './features/projects/projects.component';
 
 export const routes: Routes = [
     { path: '', component: HomeComponent },
-    { path: 'entry/:id', component: EntryComponent },
     { path: 'music', component: MusicPageComponent },
     { path: 'notes', component: NotesComponent },
     { path: 'tierlist', component: TierlistComponent },
     { path: 'understand', component: UnderstandComponent },
     { path: 'browser', component: BrowserComponent },
+    { path: 'projects', component: ProjectsComponent },
     { path: '**', redirectTo: '' }
 ];

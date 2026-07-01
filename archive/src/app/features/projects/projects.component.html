@@ -1,0 +1,60 @@
+<app-header></app-header>
+
+<div class="projects-app">
+  <div class="projects-sidebar">
+    <div class="creator-box">
+      <input type="text" [(ngModel)]="newTitle" placeholder="New Project/Idea Name..." (keyup.enter)="createProject()" class="creator-input" />
+      <div class="creator-row">
+        <select [(ngModel)]="newCategory" class="creator-select">
+          <option value="Project">Project</option>
+          <option value="File">File</option>
+          <option value="Idea">Idea</option>
+          <option value="Undefined">Undefined</option>
+        </select>
+        <button (click)="createProject()" class="creator-btn">Add</button>
+      </div>
+    </div>
+
+    <div class="projects-list">
+      <div *ngFor="let p of projects" (click)="selectProject(p)" class="project-item" [class.active]="selectedProject?.id === p.id">
+        <span class="project-title">{{ p.title }}</span>
+        <span class="project-badge" [attr.data-category]="p.category">{{ p.category }}</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="projects-content" *ngIf="selectedProject">
+    <div class="content-header">
+      <div class="header-info" *ngIf="!editMode">
+        <h2>{{ selectedProject.title }}</h2>
+        <span class="project-badge" [attr.data-category]="selectedProject.category">{{ selectedProject.category }}</span>
+      </div>
+      <div class="header-edit-info" *ngIf="editMode">
+        <input type="text" [(ngModel)]="selectedProject.title" class="edit-title-input" />
+        <select [(ngModel)]="selectedProject.category" class="edit-category-select">
+          <option value="Project">Project</option>
+          <option value="File">File</option>
+          <option value="Idea">Idea</option>
+          <option value="Undefined">Undefined</option>
+        </select>
+      </div>
+      <div class="header-actions">
+        <button *ngIf="!editMode" (click)="toggleEdit()" class="action-btn">Edit</button>
+        <button *ngIf="editMode" (click)="saveProject()" class="action-btn save">Save</button>
+        <button *ngIf="editMode" (click)="toggleEdit()" class="action-btn cancel">Cancel</button>
+        <button (click)="deleteProject()" class="action-btn delete">Delete</button>
+      </div>
+    </div>
+
+    <div class="content-body">
+      <div *ngIf="!editMode" [innerHTML]="renderedMarkdown" class="markdown-preview"></div>
+      <div *ngIf="editMode" class="editor-pane">
+        <textarea [(ngModel)]="selectedProject.content" class="editor-textarea" placeholder="Write markdown details here..."></textarea>
+      </div>
+    </div>
+  </div>
+
+  <div class="projects-empty" *ngIf="!selectedProject">
+    <p>Create a project or idea from the sidebar to get started.</p>
+  </div>
+</div>

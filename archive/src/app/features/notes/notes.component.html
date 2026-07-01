@@ -1,0 +1,48 @@
+<app-header></app-header>
+
+<div class="notes-app" *ngIf="authService.isAuthenticated; else loginTemplate">
+  <div class="notes-sidebar">
+    <div class="notes-creator">
+      <input type="text" [(ngModel)]="newFileName" placeholder="New note/folder name..." class="creator-input" />
+      <div class="creator-buttons">
+        <button (click)="createNewNote()" class="creator-btn">Add Note</button>
+        <button (click)="createNewFolder()" class="creator-btn">Add Folder</button>
+      </div>
+    </div>
+
+    <div class="breadcrumb">
+      <button *ngFor="let folder of noteFolderPath; let i = index" (click)="navigateToFolder(i)" class="breadcrumb-item">
+        {{ folder.name }}
+      </button>
+    </div>
+
+    <div class="notes-list">
+      <div *ngFor="let item of noteFolderContents" class="note-item" [class.active]="selectedNote?.id === item.id" (click)="openNote(item)">
+        <span class="note-name">{{ item.name }}</span>
+      </div>
+      <div *ngIf="noteFolderContents.length === 0" class="empty-list">Empty</div>
+    </div>
+  </div>
+
+  <div class="notes-workspace" *ngIf="selectedNote">
+    <div class="notes-editor">
+      <div class="editor-header">
+        <input type="text" class="note-title-input" [(ngModel)]="currentNoteTitle" (input)="onContentChange()" placeholder="Note title" />
+        <button class="delete-btn" (click)="deleteCurrentNote()">Delete</button>
+      </div>
+      <textarea class="editor-textarea" [(ngModel)]="currentNoteContent" (input)="onContentChange()" placeholder="Write markdown here..."></textarea>
+    </div>
+
+    <div class="notes-preview">
+      <div class="preview-content" [innerHTML]="renderedMarkdown"></div>
+    </div>
+  </div>
+
+  <div class="notes-empty" *ngIf="!selectedNote">
+    <p>Select or create a note from the sidebar.</p>
+  </div>
+</div>
+
+<ng-template #loginTemplate>
+  <app-drive-login></app-drive-login>
+</ng-template>

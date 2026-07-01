@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="extension-header">
+    <div class="logo">Everyday Creator</div>
+    <button id="settings-toggle" class="btn-icon" title="Settings">⚙️</button>
+  </div>
+
+  <div id="settings-pane" class="settings-pane hidden">
+    <label>Dashboard Host:</label>
+    <input type="text" id="host-input" value="https://jesse-rr.github.io">
+    <button id="save-settings" class="btn btn-primary">Save</button>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="note-tab">Note</button>
+    <button class="tab-btn" data-tab="project-tab">Project</button>
+  </div>
+
+  <div id="note-tab" class="tab-content">
+    <div class="form-group">
+      <label>Title</label>
+      <input type="text" id="note-title" placeholder="Note title...">
+    </div>
+    <div class="form-group">
+      <label>Content</label>
+      <textarea id="note-content" rows="4" placeholder="Write or paste note content..."></textarea>
+    </div>
+    <button id="send-note-btn" class="btn btn-primary">Add Note</button>
+  </div>
+
+  <div id="project-tab" class="tab-content hidden">
+    <div class="form-group">
+      <label>Project Title</label>
+      <input type="text" id="project-title" placeholder="Project name/idea...">
+    </div>
+    <div class="form-group">
+      <label>Category</label>
+      <select id="project-category">
+        <option value="Project">Project</option>
+        <option value="Idea">Idea</option>
+        <option value="Task">Task</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Initial Details</label>
+      <textarea id="project-content" rows="3" placeholder="Description or task content..."></textarea>
+    </div>
+    <button id="send-project-btn" class="btn btn-primary">Add Project</button>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
