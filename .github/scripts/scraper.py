@@ -21,34 +21,25 @@ HEADERS = {"User-Agent": "Mozilla/5.0"}
 IT_KEYWORDS = [
     "analista de sistemas", "analista de ti", "analista de tecnologia",
     "desenvolvedor", "programador", "engenheiro de software",
-    "administrador de banco de dados", "dba", "administrador de rede",
-    "suporte de ti", "infraestrutura de ti",
-    "seguranca da informacao", "segurança da informação",
-    "cientista de dados", "ciencia de dados", "ciência de dados",
+    "administrador de banco de dados", r"\bdba\b", "administrador de rede",
+    "administrador de sistemas", "suporte de ti", "infraestrutura de ti",
+    "seguranca da informacao", "cientista de dados", "ciencia de dados",
     "engenheiro de dados", "analista de dados",
-    "devops", "cloud computing",
-    "tecnico de informatica", "técnico de informática",
-    "tecnico em informatica", "técnico em informática",
-    "tecnologia da informacao", "tecnologia da informação",
-    "analista de suporte", "web designer", "webdesigner",
+    "devops", "cloud computing", "computacao em nuvem",
+    "tecnologia da informacao", "analista de suporte",
+    "web designer", "webdesigner",
     "fullstack", "full stack", "full-stack",
     "frontend", "front end", "front-end",
     "backend", "back end", "back-end",
-    "engenheiro de computacao", "engenheiro de computação",
-    "analista de desenvolvimento",
-    "arquiteto de software", "arquiteto de sistemas",
-    "analista de infraestrutura", "analista de redes",
-    "analista de seguranca", "analista de segurança",
-    "machine learning", "inteligencia artificial", "inteligência artificial",
-    "business intelligence",
-    "scrum master", "product owner",
-    "governanca de ti", "governança de ti",
-    "gestao de ti", "gestão de ti",
-    "sistemas de informacao", "sistemas de informação",
-    "ciencia da computacao", "ciência da computação",
-    "tecnico em processamento de dados", "técnico em processamento de dados",
-    "analista de informática", "analista de informatica",
-    "gestor de ti",
+    "engenheiro de computacao", "analista de desenvolvimento",
+    "arquiteto de software", "arquiteto de sistemas", "arquiteto de solucoes",
+    "analista de infraestrutura", "analista de redes", "analista de rede",
+    "analista de seguranca", "machine learning", "inteligencia artificial",
+    "business intelligence", "scrum master", "product owner",
+    "governanca de ti", "gestao de ti",
+    "sistemas de informacao", "ciencia da computacao",
+    "analista de informatica", "analista em ti", "especialista em ti",
+    "profissional de ti", "coordenador de ti", "gestor de ti",
 ]
 
 
@@ -74,10 +65,11 @@ def parse_deadline(text):
     text = text.strip()
     if not text or text.lower() in ("suspenso", "prorrogado", "anulado", "n/a"):
         return None
-    m = re.search(r"(\d{2})/(\d{2})/(\d{4})", text)
-    if m:
+    dates = re.findall(r"(\d{2})/(\d{2})/(\d{4})", text)
+    if dates:
+        day, month, year = dates[-1]
         try:
-            return datetime(int(m.group(3)), int(m.group(2)), int(m.group(1)))
+            return datetime(int(year), int(month), int(day))
         except ValueError:
             return None
     return None
@@ -110,11 +102,11 @@ def scrape_listing():
         if "Superior" not in cd_text:
             continue
 
-        ce_m = re.search(r'<div class="ce"><span>(.*?)</span>', card)
-        deadline_str = ce_m.group(1).strip() if ce_m else ""
+        ce_m = re.search(r'<div class="ce"><span>(.*?)</span>', card, re.DOTALL)
+        deadline_str = re.sub(r"<[^>]+>", " ", ce_m.group(1)).strip() if ce_m else ""
 
         deadline_dt = parse_deadline(deadline_str)
-        if deadline_dt and deadline_dt < datetime.now():
+        if deadline_dt and deadline_dt.date() < datetime.now().date():
             continue
 
         if not deadline_dt and deadline_str.lower() in ("suspenso", "anulado"):
@@ -143,7 +135,7 @@ def fetch_detail_positions(url):
     except Exception:
         return []
 
-    m = re.search(r'itemprop="articleBody">(.*?)</(?:div|article)>', html, re.DOTALL)
+    m = re.search(r'itemprop="articleBody">(.*?)</article>', html, re.DOTALL)
     if not m:
         return []
 
@@ -171,8 +163,11 @@ def find_it_positions(positions):
     for pos in positions:
         pos_norm = normalize(pos)
         for kw in IT_KEYWORDS:
-            kw_norm = normalize(kw)
-            if kw_norm in pos_norm:
+            if kw.startswith(r"\b"):
+                if re.search(kw, pos_norm):
+                    matched.append(pos)
+                    break
+            elif kw in pos_norm:
                 matched.append(pos)
                 break
     return matched
